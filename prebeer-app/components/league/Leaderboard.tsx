@@ -8,6 +8,7 @@ interface Standing {
   last_name: string;
   team_name: string;
   season_points: number;
+  rank_change: number;
 }
 
 export default function Leaderboard() {
@@ -40,6 +41,18 @@ export default function Leaderboard() {
     }
   }
 
+  function getMovementDisplay(rankChange: number) {
+    if (rankChange > 0) {
+      return "👆";
+    }
+
+    if (rankChange < 0) {
+      return "👇";
+    }
+
+    return "";
+  }
+
   return (
     <div className="rounded-3xl border border-slate-800 bg-slate-900 p-6">
       <h2 className="text-2xl font-bold text-white">
@@ -62,13 +75,13 @@ export default function Leaderboard() {
               }
               className="flex w-full items-center justify-between p-4 text-left transition hover:bg-slate-800"
             >
-              <div className="flex items-center">
-                <span className="mr-6 w-12 text-center text-3xl flex-shrink-0">
+              <div className="flex min-w-0 flex-1 items-center">
+                <span className="mr-4 w-10 flex-shrink-0 text-center text-2xl">
                   {getRankDisplay(index + 1)}
                 </span>
 
-                <div>
-                  <p className="text-xl font-bold leading-tight text-white">
+                <div className="min-w-0 flex-1">
+                  <p className="text-lg font-bold leading-tight text-white">
                     {member.team_name}
                   </p>
 
@@ -78,13 +91,25 @@ export default function Leaderboard() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-6">
-                <div className="text-lg font-bold text-amber-400">
+              <div className="ml-4 flex flex-shrink-0 items-center gap-3">
+                {member.rank_change !== 0 && (
+                  <span
+                    className={
+                      member.rank_change > 0
+                        ? "text-sm"
+                        : "text-sm"
+                    }
+                  >
+                    {getMovementDisplay(member.rank_change)}
+                  </span>
+                )}
+
+                <div className="whitespace-nowrap text-base font-bold text-amber-400">
                   {member.season_points} pts
                 </div>
 
-                <span className="text-slate-500 text-base">
-                  {expandedMember === member.member_id ? "▲" : "▼"}
+                <span className="text-sm text-slate-500">
+                  {expandedMember === member.member_id ? "▴" : "▾"}
                 </span>
               </div>
             </button>
