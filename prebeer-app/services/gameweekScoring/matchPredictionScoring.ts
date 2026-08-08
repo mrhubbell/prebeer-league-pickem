@@ -37,7 +37,9 @@ export async function scoreMatchPredictions(
       .from("fixtures")
       .select(`
         fixture_id,
-        result,
+        home_score,
+        away_score,
+        finished,
         matchweeks!fixtures_matchweek_id_fkey(
           featured_match_fixture_id,
           game_of_the_week_fixture_id
@@ -65,6 +67,25 @@ export async function scoreMatchPredictions(
 
   for (const fixture of fixtures) {
 
+    // Do not score fixtures that have not finished.
+    if (
+      !fixture.finished ||
+      fixture.home_score === null ||
+      fixture.away_score === null
+    ) {
+      continue;
+    }
+
+    let result: string;
+
+    if (fixture.home_score > fixture.away_score) {
+      result = "HOME";
+    } else if (fixture.away_score > fixture.home_score) {
+      result = "AWAY";
+    } else {
+      result = "DRAW";
+    }
+
     const featuredId =
       (fixture.matchweeks as any)
         .featured_match_fixture_id;
@@ -80,7 +101,7 @@ export async function scoreMatchPredictions(
     for (const pick of fixturePicks) {
 
       const isCorrect =
-        pick.predicted_result === fixture.result;
+        pick.predicted_result === result;
 
       const points =
         calculateFixturePoints(

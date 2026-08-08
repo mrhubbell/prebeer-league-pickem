@@ -1,4 +1,3 @@
-import { getCurrentTime } from "@/lib/time";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export async function getCurrentGameweekFixtures() {
@@ -65,11 +64,14 @@ export async function saveMemberPicks(
 
   if (fixtureError) throw fixtureError;
 
-  const now = getCurrentTime();
+  // Use the actual current time in production.
+  const now = new Date();
 
   const unlockedFixtureIds = new Set(
     fixtures
-      .filter((fixture) => new Date(fixture.kickoff_time) > now)
+      .filter(
+        (fixture) => new Date(fixture.kickoff_time) > now
+      )
       .map((fixture) => fixture.fixture_id)
   );
 

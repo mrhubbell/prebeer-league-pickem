@@ -14,9 +14,9 @@ Assist Pick = 2 points per assist
 Clean Sheet Pick = 3 points
 
 Weekly Prediction Bonus
-7 Correct = +1
-8 Correct = +3
-9 Correct = +6
+7 Correct = +2
+8 Correct = +4
+9 Correct = +7
 10 Correct = +10
 
 ==========================================
