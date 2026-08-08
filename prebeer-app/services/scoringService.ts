@@ -50,15 +50,37 @@ export function calculateWeeklyPredictionBonus(
       return 10;
 
     case 9:
-      return 6;
+      return 7;
 
     case 8:
-      return 3;
+      return 4;
 
     case 7:
-      return 1;
+      return 2;
 
     default:
       return 0;
   }
+}
+export function getGoalPointsByPosition(
+  position: string
+): number {
+
+  switch (position) {
+
+    case "GK":
+      return 6;
+
+    case "DEF":
+      return 5;
+
+    case "MID":
+      return 3;
+
+    case "FWD":
+    default:
+      return 2;
+
+  }
+
 }

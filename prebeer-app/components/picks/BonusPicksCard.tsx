@@ -1,0 +1,249 @@
+"use client";
+
+interface Player {
+  player_id: number;
+  web_name: string;
+  club_name: string;
+}
+
+interface BonusPicksCardProps {
+  players: Player[];
+  clubs: any[];
+
+  goalPick1: number | null;
+  goalPick2: number | null;
+
+  assistPick1: number | null;
+  assistPick2: number | null;
+
+  cleanSheetClubId: number | null;
+
+  onGoalPickChange: (
+    pickNumber: number,
+    playerId: number
+  ) => void;
+
+  onAssistPickChange: (
+    pickNumber: number,
+    playerId: number
+  ) => void;
+
+  onCleanSheetChange: (
+    clubId: number
+  ) => void;
+
+  locked?: boolean;
+}
+
+export default function BonusPicksCard({
+  players,
+  clubs,
+  goalPick1,
+  goalPick2,
+  assistPick1,
+  assistPick2,
+  cleanSheetClubId,
+  onGoalPickChange,
+  onAssistPickChange,
+  onCleanSheetChange,
+  locked,
+}: BonusPicksCardProps) {
+  return (
+    <div
+  className={`rounded-3xl border bg-slate-900 p-6 ${
+    locked
+      ? "border-amber-400"
+      : "border-slate-800"
+  }`}
+>
+{locked && (
+  <div className="mb-6 rounded-xl border border-amber-400 bg-amber-400/10 px-4 py-3">
+    <p className="font-semibold text-amber-400">
+      🔒 WILDCARD PICKS ARE LOCKED!
+    </p>
+
+    <p className="mt-1 text-sm text-slate-400">
+      Your picks lock after the first kickoff of the matchweek.
+    </p>
+  </div>
+)}
+      <h2 className="text-2xl font-bold text-white">
+        ⭐ Wildcard Picks
+      </h2>
+
+      <p className="mt-2 text-sm text-slate-400">
+        Get your picks in before the first match of the gameweek kicks off.
+      </p>
+
+      {/* GOALSCORERS */}
+
+      <div className="mt-8">
+
+        <h3 className="mb-4 text-lg font-semibold text-amber-400">
+          ⚽ Golden Boot
+        </h3>
+
+        <div className="space-y-4">
+
+          <select
+            value={goalPick1 ?? ""}
+            disabled={locked}
+            onChange={(e) =>
+              onGoalPickChange(
+                1,
+                Number(e.target.value)
+              )
+            }
+            className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-white"
+          >
+            <option value="">
+              Goalscorer #1
+            </option>
+
+            {players.map((player) => (
+              <option
+                key={player.player_id}
+                value={player.player_id}
+                disabled={
+                  player.player_id === goalPick2
+                }
+              >
+                {player.club_name} • {player.web_name}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={goalPick2 ?? ""}
+            disabled={locked}
+            onChange={(e) =>
+              onGoalPickChange(
+                2,
+                Number(e.target.value)
+              )
+            }
+            className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-white"
+          >
+            <option value="">
+              Goalscorer #2
+            </option>
+
+            {players.map((player) => (
+              <option
+                key={player.player_id}
+                value={player.player_id}
+                disabled={
+                  player.player_id === goalPick1
+                }
+              >
+                {player.club_name} • {player.web_name}
+              </option>
+            ))}
+          </select>
+
+        </div>
+
+      </div>
+
+      {/* FUTURE BUILDS */}
+
+      <div className="mt-10 border-t border-slate-800 pt-6">
+
+  <h3 className="mb-4 text-lg font-semibold text-amber-400">
+    🎯 Playmaker
+  </h3>
+
+  <div className="space-y-4">
+
+    <select
+  value={assistPick1 ?? ""}
+  disabled={locked}
+  onChange={(e) =>
+    onAssistPickChange(
+      1,
+      Number(e.target.value)
+    )
+  }
+  className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-white"
+>
+  <option value="">
+    Assister #1
+  </option>
+
+  {players.map((player) => (
+    <option
+      key={player.player_id}
+      value={player.player_id}
+      disabled={player.player_id === assistPick2}
+    >
+      {player.club_name} • {player.web_name}
+    </option>
+  ))}
+</select>
+
+<select
+  value={assistPick2 ?? ""}
+  disabled={locked}
+  onChange={(e) =>
+    onAssistPickChange(
+      2,
+      Number(e.target.value)
+    )
+  }
+  className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-white"
+>
+  <option value="">
+    Assister #2
+  </option>
+
+  {players.map((player) => (
+    <option
+      key={player.player_id}
+      value={player.player_id}
+      disabled={player.player_id === assistPick1}
+    >
+      {player.club_name} • {player.web_name}
+    </option>
+  ))}
+</select>
+
+</div>
+
+</div>
+
+<div className="mt-8 border-t border-slate-800 pt-6">
+
+  <h3 className="mb-4 text-lg font-semibold text-amber-400">
+    🧤 Clean Sheet
+  </h3>
+
+  <select
+    value={cleanSheetClubId ?? ""}
+    disabled={locked}
+    onChange={(e) =>
+      onCleanSheetChange(
+        Number(e.target.value)
+      )
+    }
+    className="mt-4 w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-white"
+  >
+    <option value="">
+      Select Club
+    </option>
+
+    {clubs.map((club) => (
+      <option
+        key={club.club_id}
+        value={club.club_id}
+      >
+        {club.club_name}
+      </option>
+    ))}
+  </select>
+
+</div>
+
+</div>
+
+);
+}

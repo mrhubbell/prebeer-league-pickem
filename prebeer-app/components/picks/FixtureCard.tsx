@@ -5,9 +5,15 @@ import Image from "next/image";
 interface FixtureCardProps {
   fixture: any;
   selection: string | null;
-  onSelect: (fixtureId: number, result: string) => void;
+  onSelect: (
+    fixtureId: number,
+    result: string
+  ) => void;
+
   featuredMatchFixtureId?: number | null;
   gameOfTheWeekFixtureId?: number | null;
+
+  locked?: boolean;
 }
 
 export default function FixtureCard({
@@ -16,6 +22,7 @@ export default function FixtureCard({
   onSelect,
   featuredMatchFixtureId,
   gameOfTheWeekFixtureId,
+  locked = false,
 }: FixtureCardProps) {
 
   const isFeatured =
@@ -24,16 +31,21 @@ export default function FixtureCard({
   const isGameOfTheWeek =
     fixture.fixture_id === gameOfTheWeekFixtureId;
 
-  const borderClass = isGameOfTheWeek
+  const borderClass =
+    isGameOfTheWeek
     ? "border-blue-500"
     : isFeatured
+    ? "border-purple-500"
+    : locked
     ? "border-amber-400"
     : "border-slate-800";
 
   const buttonStyle = (value: string) =>
-    selection === value
-      ? "bg-amber-400 text-slate-900 border-amber-400"
-      : "border-slate-700 text-white hover:border-amber-400 hover:bg-slate-800";
+  locked
+    ? "border-slate-700 bg-slate-800 text-slate-500 cursor-not-allowed"
+    : selection === value
+    ? "bg-amber-400 text-slate-900 border-amber-400"
+    : "border-slate-700 text-white hover:border-amber-400 hover:bg-slate-800";
 
   return (
     <div className={`rounded-3xl border bg-slate-900 p-5 ${borderClass}`}>
@@ -42,12 +54,12 @@ export default function FixtureCard({
         <div className="mb-4 flex justify-center">
           {isGameOfTheWeek ? (
             <span className="rounded-full bg-blue-600 px-4 py-1 text-sm font-bold text-white">
-              🏆 GAME OF THE WEEK
+              🏆 MATCH OF THE WEEK
             </span>
           ) : (
-            <span className="rounded-full bg-amber-400 px-4 py-1 text-sm font-bold text-slate-900">
-              ⭐ FEATURED MATCH
-            </span>
+            <span className="rounded-full bg-purple-600 px-4 py-1 text-sm font-bold text-white">
+  ⭐ FEATURED MATCH
+</span>
           )}
         </div>
       )}
@@ -68,6 +80,7 @@ export default function FixtureCard({
         </div>
 
         <div className="text-center">
+
           <p className="text-sm text-slate-400">vs</p>
 
           <p className="mt-2 text-xs text-slate-500">
@@ -80,6 +93,13 @@ export default function FixtureCard({
               timeZone: "America/New_York",
             }).format(new Date(fixture.kickoff_time))}
           </p>
+
+          {locked && (
+  <p className="mt-2 text-sm font-semibold text-amber-400">
+    🔒 Locked
+  </p>
+)}
+
         </div>
 
         <div className="flex flex-col items-center">
@@ -100,6 +120,7 @@ export default function FixtureCard({
       <div className="mt-6 grid grid-cols-3 gap-3">
 
         <button
+          disabled={locked}
           onClick={() => onSelect(fixture.fixture_id, "HOME")}
           className={`rounded-xl border py-3 font-semibold transition ${buttonStyle("HOME")}`}
         >
@@ -107,6 +128,7 @@ export default function FixtureCard({
         </button>
 
         <button
+          disabled={locked}
           onClick={() => onSelect(fixture.fixture_id, "DRAW")}
           className={`rounded-xl border py-3 font-semibold transition ${buttonStyle("DRAW")}`}
         >
@@ -114,6 +136,7 @@ export default function FixtureCard({
         </button>
 
         <button
+          disabled={locked}
           onClick={() => onSelect(fixture.fixture_id, "AWAY")}
           className={`rounded-xl border py-3 font-semibold transition ${buttonStyle("AWAY")}`}
         >
