@@ -1,22 +1,24 @@
 import Link from "next/link";
 import MemberSelector from "./MemberSelector";
 
-export default function LeagueHeader() {
+interface LeagueHeaderProps {
+  showMemberSelector?: boolean;
+}
+
+export default function LeagueHeader({
+  showMemberSelector = true,
+}: LeagueHeaderProps) {
   return (
-    <header className="mb-8">
-
+    <header className="space-y-4">
       <div className="flex items-center justify-between">
-
         <Link href="/">
-          <h1 className="text-3xl font-black tracking-tight text-white hover:text-amber-400 transition">
+          <h1 className="text-3xl font-black tracking-tight text-white transition hover:text-amber-400">
             🍺 Pre-Beer League Pick'Em
           </h1>
         </Link>
-
       </div>
 
-      <MemberSelector />
-
+      {showMemberSelector && <MemberSelector />}
     </header>
   );
 }
