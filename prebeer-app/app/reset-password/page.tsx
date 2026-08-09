@@ -1,37 +1,56 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 
-export default function LoginPage() {
+export default function ResetPasswordPage() {
   const router = useRouter();
 
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function handleLogin(e: React.FormEvent) {
+  async function handleUpdatePassword(e: React.FormEvent) {
     e.preventDefault();
 
-    setLoading(true);
+    setError("");
     setMessage("");
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
+    if (password.length < 6) {
+      setError("Your password must be at least 6 characters.");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError("The passwords do not match.");
+      return;
+    }
+
+    setLoading(true);
+
+    const { error } = await supabase.auth.updateUser({
       password,
     });
 
     if (error) {
-      setMessage(error.message);
+      setError(error.message);
       setLoading(false);
       return;
     }
 
-    router.push("/");
-    router.refresh();
+    setMessage(
+      "Your password has been successfully updated!"
+    );
+
+    setLoading(false);
+
+    setTimeout(() => {
+      router.push("/");
+      router.refresh();
+    }, 1500);
   }
 
   return (
@@ -44,64 +63,73 @@ export default function LoginPage() {
           </h1>
 
           <p className="mt-3 text-slate-400">
-            Welcome back! Log in to access your league.
+            Let&apos;s get you back in the game.
           </p>
         </div>
 
         <div className="rounded-3xl border border-slate-800 bg-slate-900 p-6">
 
           <h2 className="text-2xl font-bold">
-            Log In
+            Create a New Password
           </h2>
 
+          <p className="mt-3 text-sm text-slate-400">
+            Enter your new password below.
+          </p>
+
           <form
-            onSubmit={handleLogin}
+            onSubmit={handleUpdatePassword}
             className="mt-6 space-y-5"
           >
 
             <div>
               <label className="mb-2 block text-sm font-semibold text-slate-300">
-                Email
+                New Password
               </label>
-
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                autoComplete="email"
-                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition focus:border-amber-400"
-                placeholder="you@example.com"
-              />
-            </div>
-
-            <div>
-              <div className="mb-2 flex items-center justify-between">
-                <label className="block text-sm font-semibold text-slate-300">
-                  Password
-                </label>
-
-                <Link
-                  href="/forgot-password"
-                  className="text-sm font-semibold text-amber-400 hover:text-amber-300"
-                >
-                  Forgot password?
-                </Link>
-              </div>
 
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                autoComplete="current-password"
+                minLength={6}
+                autoComplete="new-password"
                 className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition focus:border-amber-400"
-                placeholder="Enter your password"
+                placeholder="Enter new password"
+              />
+
+              <p className="mt-2 text-xs text-slate-500">
+                Must be at least 6 characters.
+              </p>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-slate-300">
+                Confirm Password
+              </label>
+
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) =>
+                  setConfirmPassword(e.target.value)
+                }
+                required
+                minLength={6}
+                autoComplete="new-password"
+                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition focus:border-amber-400"
+                placeholder="Enter password again"
               />
             </div>
 
-            {message && (
+            {error && (
               <div className="rounded-xl border border-red-900 bg-red-950/40 p-4 text-sm text-red-300">
+                {error}
+              </div>
+            )}
+
+            {message && (
+              <div className="rounded-xl border border-green-900 bg-green-950/40 p-4 text-sm text-green-300">
                 {message}
               </div>
             )}
@@ -111,25 +139,12 @@ export default function LoginPage() {
               disabled={loading}
               className="w-full rounded-xl bg-amber-400 px-4 py-3 font-bold text-slate-950 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {loading ? "Logging In..." : "Log In"}
+              {loading
+                ? "Updating Password..."
+                : "Reset My Password"}
             </button>
 
           </form>
-
-          <div className="mt-6 border-t border-slate-800 pt-6 text-center">
-
-            <p className="text-sm text-slate-400">
-              Not a member yet?
-            </p>
-
-            <Link
-              href="/league"
-              className="mt-2 inline-block font-bold text-amber-400 hover:text-amber-300"
-            >
-              Join the League →
-            </Link>
-
-          </div>
 
         </div>
 

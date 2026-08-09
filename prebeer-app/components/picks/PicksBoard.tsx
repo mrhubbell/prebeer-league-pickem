@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 import { useMember } from "@/context/MemberContext";
 import { useEffect, useMemo, useState } from "react";
@@ -480,80 +481,100 @@ if (!session?.access_token) {
 
   return (
   <div className="space-y-5 pb-24">
-    <div className="pt-4">
-      <h1 className="text-4xl font-black">
-        Gameweek {weekNumber}
-      </h1>
 
-        <p className="mt-4 text-lg font-semibold">
-          {completedPicks} of {totalFixtures} Picks Complete
-        </p>
+    {/* Gameweek Header */}
+<div className="grid grid-cols-[120px_1fr] items-center gap-1 pt-1">
 
-        <div className="mt-3 h-3 rounded-full bg-slate-700">
-          <div
-            className="h-3 rounded-full bg-amber-400 transition-all duration-300"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
+  {/* Compact Logo */}
+  <Link href="/" className="block">
+    <img
+      src="/images/pre-beer-league-logo.png"
+      alt="Pre-Beer League Pick 'Em"
+      className="h-[120px] w-[120px] object-contain"
+    />
+  </Link>
 
-        <p className="mt-4 text-slate-400">
-          Pick the result of every match.
-        </p>
-      </div>
+  {/* Gameweek Information */}
+  <div className="min-w-0 max-w-[220px]">
+    <h1 className="text-3xl font-black leading-tight">
+      Gameweek {weekNumber}
+    </h1>
 
-      {fixtures.map((fixture) => (
-        <FixtureCard
-          key={fixture.fixture_id}
-          fixture={fixture}
-          selection={
-            selections[fixture.fixture_id] ?? null
-          }
-          onSelect={handleSelection}
-          featuredMatchFixtureId={
-            featuredMatchFixtureId
-          }
-          gameOfTheWeekFixtureId={
-            gameOfTheWeekFixtureId
-          }
-          locked={
-            new Date(fixture.kickoff_time) <= now
-          }
-        />
-      ))}
+    <p className="mt-1 text-base font-semibold">
+      {completedPicks} of {totalFixtures} Picks Complete
+    </p>
 
-      <BonusPicksCard
-        players={players}
-        clubs={clubs}
-        goalPick1={goalPick1}
-        goalPick2={goalPick2}
-        assistPick1={assistPick1}
-        assistPick2={assistPick2}
-        cleanSheetClubId={cleanSheetClubId}
-        onGoalPickChange={
-          handleGoalPickChange
-        }
-        onAssistPickChange={
-          handleAssistPickChange
-        }
-        onCleanSheetChange={
-          handleCleanSheetChange
-        }
-        locked={bonusLocked}
-      />
-
-      {message && (
-        <div className="rounded-xl bg-slate-800 p-4 text-center text-amber-300">
-          {message}
-        </div>
-      )}
-
-      <SavePicksButton
-        disabled={
-          completedPicks !== totalFixtures ||
-          saving
-        }
-        onClick={handleSave}
+    <div className="mt-2 h-3 w-full rounded-full bg-slate-700">
+      <div
+        className="h-3 rounded-full bg-amber-400 transition-all duration-300"
+        style={{ width: `${progress}%` }}
       />
     </div>
-  );
+
+    <p className="mt-2 text-sm text-slate-400">
+      Pick the result of every match.
+    </p>
+  </div>
+</div>
+
+    {/* Fixtures */}
+    {fixtures.map((fixture) => (
+      <FixtureCard
+        key={fixture.fixture_id}
+        fixture={fixture}
+        selection={
+          selections[fixture.fixture_id] ?? null
+        }
+        onSelect={handleSelection}
+        featuredMatchFixtureId={
+          featuredMatchFixtureId
+        }
+        gameOfTheWeekFixtureId={
+          gameOfTheWeekFixtureId
+        }
+        locked={
+          new Date(fixture.kickoff_time) <= now
+        }
+      />
+    ))}
+
+    {/* Bonus Picks */}
+    <BonusPicksCard
+      players={players}
+      clubs={clubs}
+      goalPick1={goalPick1}
+      goalPick2={goalPick2}
+      assistPick1={assistPick1}
+      assistPick2={assistPick2}
+      cleanSheetClubId={cleanSheetClubId}
+      onGoalPickChange={
+        handleGoalPickChange
+      }
+      onAssistPickChange={
+        handleAssistPickChange
+      }
+      onCleanSheetChange={
+        handleCleanSheetChange
+      }
+      locked={bonusLocked}
+    />
+
+    {/* Save Message */}
+    {message && (
+      <div className="rounded-xl bg-slate-800 p-4 text-center text-amber-300">
+        {message}
+      </div>
+    )}
+
+    {/* Save Button */}
+    <SavePicksButton
+      disabled={
+        completedPicks !== totalFixtures ||
+        saving
+      }
+      onClick={handleSave}
+    />
+
+  </div>
+);
 }

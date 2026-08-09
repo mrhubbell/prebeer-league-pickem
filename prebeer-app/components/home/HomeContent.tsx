@@ -8,7 +8,7 @@ import { useMember } from "@/context/MemberContext";
 import GameweekHero from "@/components/dashboard/GameweekHero";
 import MyPicksCard from "@/components/dashboard/MyPicksCard";
 import LeagueLeaderCard from "@/components/dashboard/LeagueLeaderCard";
-import RecentActivityCard from "@/components/dashboard/RecentActivityCard";
+import FanboyClubsCard from "@/components/dashboard/FanboyClubsCard";
 
 interface Dashboard {
   gameweek: {
@@ -55,12 +55,18 @@ interface Dashboard {
     value: number;
   } | null;
 };
-  activity: {
-    id: number;
-    title: string;
-    message: string;
-    time: string;
-  }[];
+  fanboyClubs: {
+  position: number;
+  clubName: string;
+  played: number;
+  wins: number;
+  draws: number;
+  losses: number;
+  goalsFor: number;
+  goalsAgainst: number;
+  goalDifference: number;
+  points: number;
+}[];
 }
 
 const supabase = createClient(
@@ -229,7 +235,7 @@ export default function HomeContent() {
     <div className="grid grid-cols-2 gap-4">
       <MyPicksCard myWeek={dashboard.myWeek} />
 
-      <RecentActivityCard activity={dashboard.activity} />
+      <FanboyClubsCard clubs={dashboard.fanboyClubs} />
     </div>
 
   </div>

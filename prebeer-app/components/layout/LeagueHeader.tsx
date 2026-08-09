@@ -5,7 +5,13 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import { useMember } from "@/context/MemberContext";
 
-export default function LeagueHeader() {
+interface LeagueHeaderProps {
+  showLogo?: boolean;
+}
+
+export default function LeagueHeader({
+  showLogo = true,
+}: LeagueHeaderProps) {
   const router = useRouter();
   const { currentMember } = useMember();
 
@@ -22,28 +28,36 @@ export default function LeagueHeader() {
   }
 
   return (
-    <header className="space-y-4">
-      <div className="text-right text-xs text-slate-400">
-        {currentMember.displayName && (
-          <>
-            Welcome! Cheers {currentMember.displayName}!{" "}
-            <button
-              onClick={handleLogout}
-              className="text-slate-500 transition hover:text-amber-400"
-            >
-              [Log Out]
-            </button>
-          </>
-        )}
-      </div>
+    <header>
+      {currentMember.displayName && (
+        <div className="mb-4 flex items-center justify-between text-sm text-slate-400">
+          <span>
+            Welcome! Cheers{" "}
+            <span className="font-semibold text-white">
+              {currentMember.displayName}!
+            </span>
+          </span>
 
-      <div className="flex items-center justify-between">
-        <Link href="/">
-          <h1 className="text-3xl font-black tracking-tight text-white transition hover:text-amber-400">
-            🍺 Pre-Beer League Pick'Em
-          </h1>
-        </Link>
-      </div>
+          <button
+            onClick={handleLogout}
+            className="text-amber-400 transition hover:text-amber-300"
+          >
+            Log Out
+          </button>
+        </div>
+      )}
+
+      {showLogo && (
+        <div className="flex justify-center">
+          <Link href="/" className="block">
+            <img
+              src="/images/pre-beer-league-logo.png"
+              alt="Pre-Beer League Pick 'Em"
+              className="w-120 object-contain"
+            />
+          </Link>
+        </div>
+      )}
     </header>
   );
 }

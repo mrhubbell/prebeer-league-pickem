@@ -37,11 +37,16 @@ export async function getSeasonStandings() {
 
   // Find the current and previous scored gameweeks.
   const matchweekIds = [
-    ...new Set(rows.map((row) => row.matchweek_id)),
+    ...new Set(
+      rows.map((row) => row.matchweek_id)
+    ),
   ].sort((a, b) => b - a);
 
-  const currentMatchweekId = matchweekIds[0];
-  const previousMatchweekId = matchweekIds[1];
+  const currentMatchweekId =
+    matchweekIds[0];
+
+  const previousMatchweekId =
+    matchweekIds[1];
 
   // Calculate current season totals.
   const currentTotals = new Map<
@@ -56,7 +61,8 @@ export async function getSeasonStandings() {
   >();
 
   for (const row of rows) {
-    const existing = currentTotals.get(row.member_id);
+    const existing =
+      currentTotals.get(row.member_id);
 
     if (existing) {
       existing.season_points += row.score;
@@ -64,147 +70,146 @@ export async function getSeasonStandings() {
       currentTotals.set(row.member_id, {
         member_id: row.member_id,
         first_name:
-          (row.members as any)?.first_name ?? "",
+          (row.members as any)?.first_name ??
+          "",
         last_name:
-          (row.members as any)?.last_name ?? "",
+          (row.members as any)?.last_name ??
+          "",
         team_name:
-          (row.members as any)?.team_name ?? "Unknown",
+          (row.members as any)?.team_name ??
+          "Unknown",
         season_points: row.score,
       });
     }
   }
 
   // Calculate standings after the previous gameweek.
-  const previousTotals = new Map<number, number>();
+  const previousTotals = new Map<
+    number,
+    number
+  >();
 
-  if (previousMatchweekId !== undefined) {
+  if (
+    previousMatchweekId !== undefined
+  ) {
     for (const row of rows) {
-      if (row.matchweek_id <= previousMatchweekId) {
+      if (
+        row.matchweek_id <=
+        previousMatchweekId
+      ) {
         previousTotals.set(
           row.member_id,
-          (previousTotals.get(row.member_id) ?? 0) +
-            row.score
+          (previousTotals.get(
+            row.member_id
+          ) ?? 0) + row.score
         );
       }
     }
   }
 
   // Sort current standings.
-  const currentStandings = [...currentTotals.values()].sort(
-    (a, b) => {
-      if (b.season_points !== a.season_points) {
-        return b.season_points - a.season_points;
-      }
-
-      return a.member_id - b.member_id;
+  const currentStandings = [
+    ...currentTotals.values(),
+  ].sort((a, b) => {
+    if (
+      b.season_points !==
+      a.season_points
+    ) {
+      return (
+        b.season_points -
+        a.season_points
+      );
     }
-  );
 
-  // Calculate previous rankings.
-  const previousStandings = [...previousTotals.entries()]
-    .sort((a, b) => {
-      if (b[1] !== a[1]) {
-        return b[1] - a[1];
-      }
-
-      return a[0] - b[0];
-    });
-
-  const previousRanks = new Map<number, number>();
-
-  previousStandings.forEach(([memberId], index) => {
-    previousRanks.set(memberId, index + 1);
+    return (
+      a.member_id -
+      b.member_id
+    );
   });
 
-  // Add movement information.
-  const standings: Standing[] = currentStandings.map(
-    (member, index) => {
-      const currentRank = index + 1;
-      const previousRank =
-        previousRanks.get(member.member_id);
+  // Calculate previous rankings.
+  const previousStandings = [
+    ...previousTotals.entries(),
+  ].sort((a, b) => {
+    if (b[1] !== a[1]) {
+      return b[1] - a[1];
+    }
 
-      return {
-        ...member,
-        rank_change:
-          previousRank !== undefined
-            ? previousRank - currentRank
-            : 0,
-      };
+    return a[0] - b[0];
+  });
+
+  const previousRanks = new Map<
+    number,
+    number
+  >();
+
+  previousStandings.forEach(
+    ([memberId], index) => {
+      previousRanks.set(
+        memberId,
+        index + 1
+      );
     }
   );
+
+  // Add movement information.
+  const standings: Standing[] =
+    currentStandings.map(
+      (member, index) => {
+        const currentRank =
+          index + 1;
+
+        const previousRank =
+          previousRanks.get(
+            member.member_id
+          );
+
+        return {
+          ...member,
+          rank_change:
+            previousRank !==
+            undefined
+              ? previousRank -
+                currentRank
+              : 0,
+        };
+      }
+    );
 
   return standings;
 }
+
 export async function getLiveSeasonStandings(
   currentMatchweekId: number
 ) {
   /*
    * ---------------------------------------------------------
-   * GET ALL MEMBERS
+   * GET INITIAL DATA IN PARALLEL
    * ---------------------------------------------------------
    */
 
-  const { data: members, error: membersError } =
-    await supabaseAdmin
+  const [
+    membersResult,
+    weeklyScoresResult,
+    fixturesResult,
+    matchweekResult,
+  ] = await Promise.all([
+    supabaseAdmin
       .from("members")
-      .select("member_id");
+      .select("member_id"),
 
-  if (membersError) throw membersError;
-
-  /*
-   * ---------------------------------------------------------
-   * GET SEASON POINTS FROM COMPLETED GAMEWEEKS
-   * ---------------------------------------------------------
-   */
-
-  const { data: weeklyScores, error: weeklyScoresError } =
-    await supabaseAdmin
+    supabaseAdmin
       .from("weekly_scores")
       .select(`
         member_id,
-        matchweek_id,
         score
       `)
       .neq(
         "matchweek_id",
         currentMatchweekId
-      );
+      ),
 
-  if (weeklyScoresError) {
-    throw weeklyScoresError;
-  }
-
-  /*
-   * Start every member at zero so members who haven't
-   * scored yet are still included in the standings.
-   */
-
-  const totals = new Map<number, number>();
-
-  for (const member of members ?? []) {
-    totals.set(member.member_id, 0);
-  }
-
-  /*
-   * Add all completed gameweek scores.
-   */
-
-  for (const row of weeklyScores ?? []) {
-    totals.set(
-      row.member_id,
-      (totals.get(row.member_id) ?? 0) +
-        (row.score ?? 0)
-    );
-  }
-
-  /*
-   * ---------------------------------------------------------
-   * GET CURRENT GAMEWEEK FIXTURES
-   * ---------------------------------------------------------
-   */
-
-  const { data: fixtures, error: fixturesError } =
-    await supabaseAdmin
+    supabaseAdmin
       .from("fixtures")
       .select(`
         fixture_id,
@@ -215,23 +220,9 @@ export async function getLiveSeasonStandings(
       .eq(
         "matchweek_id",
         currentMatchweekId
-      );
+      ),
 
-  if (fixturesError) {
-    throw fixturesError;
-  }
-
-  const fixtureIds =
-    (fixtures ?? []).map(
-      (fixture) => fixture.fixture_id
-    );
-
-  /*
-   * Get the featured / Game of the Week fixtures.
-   */
-
-  const { data: matchweek, error: matchweekError } =
-    await supabaseAdmin
+    supabaseAdmin
       .from("matchweeks")
       .select(`
         featured_match_fixture_id,
@@ -241,21 +232,137 @@ export async function getLiveSeasonStandings(
         "matchweek_id",
         currentMatchweekId
       )
-      .single();
+      .single(),
+  ]);
 
-  if (matchweekError) {
-    throw matchweekError;
+  /*
+   * ---------------------------------------------------------
+   * CHECK INITIAL ERRORS
+   * ---------------------------------------------------------
+   */
+
+  if (membersResult.error) {
+    throw membersResult.error;
+  }
+
+  if (weeklyScoresResult.error) {
+    throw weeklyScoresResult.error;
+  }
+
+  if (fixturesResult.error) {
+    throw fixturesResult.error;
+  }
+
+  if (matchweekResult.error) {
+    throw matchweekResult.error;
+  }
+
+  const members =
+    membersResult.data ?? [];
+
+  const weeklyScores =
+    weeklyScoresResult.data ?? [];
+
+  const fixtures =
+    fixturesResult.data ?? [];
+
+  const matchweek =
+    matchweekResult.data;
+
+  const fixtureIds =
+    fixtures.map(
+      (fixture) =>
+        fixture.fixture_id
+    );
+
+  /*
+   * ---------------------------------------------------------
+   * START EVERY MEMBER AT ZERO
+   * ---------------------------------------------------------
+   */
+
+  const totals = new Map<
+    number,
+    number
+  >();
+
+  for (const member of members) {
+    totals.set(
+      member.member_id,
+      0
+    );
   }
 
   /*
    * ---------------------------------------------------------
-   * MATCH PREDICTION POINTS
+   * ADD COMPLETED GAMEWEEK SCORES
    * ---------------------------------------------------------
    */
 
+  for (const row of weeklyScores) {
+    totals.set(
+      row.member_id,
+      (totals.get(
+        row.member_id
+      ) ?? 0) +
+        (row.score ?? 0)
+    );
+  }
+
+  /*
+   * ---------------------------------------------------------
+   * GET CURRENT GAMEWEEK PICKS / RESULTS IN PARALLEL
+   * ---------------------------------------------------------
+   */
+
+  let picks: Array<{
+    member_id: number;
+    fixture_id: number;
+    predicted_result: string;
+  }> = [];
+
+  let goalPicks: Array<{
+    member_id: number;
+    player_id: number;
+  }> = [];
+
+  let assistPicks: Array<{
+    member_id: number;
+    player_id: number;
+  }> = [];
+
+  let cleanSheetPicks: Array<{
+    member_id: number;
+    club_id: number;
+  }> = [];
+
+  let goals: Array<{
+    player_id: number;
+    own_goal: boolean;
+    fixture_id: number;
+  }> = [];
+
+  let assists: Array<{
+    player_id: number;
+    fixture_id: number;
+  }> = [];
+
+  let cleanSheets: Array<{
+    club_id: number;
+    fixture_id: number;
+  }> = [];
+
   if (fixtureIds.length > 0) {
-    const { data: picks, error: picksError } =
-      await supabaseAdmin
+    const [
+      picksResult,
+      goalPicksResult,
+      assistPicksResult,
+      cleanSheetPicksResult,
+      goalsResult,
+      assistsResult,
+      cleanSheetsResult,
+    ] = await Promise.all([
+      supabaseAdmin
         .from("match_picks")
         .select(`
           member_id,
@@ -265,74 +372,223 @@ export async function getLiveSeasonStandings(
         .in(
           "fixture_id",
           fixtureIds
-        );
+        ),
 
-    if (picksError) {
-      throw picksError;
+      supabaseAdmin
+        .from("goal_scorer_picks")
+        .select(`
+          member_id,
+          player_id
+        `)
+        .eq(
+          "matchweek_id",
+          currentMatchweekId
+        ),
+
+      supabaseAdmin
+        .from("assists_picks")
+        .select(`
+          member_id,
+          player_id
+        `)
+        .eq(
+          "matchweek_id",
+          currentMatchweekId
+        ),
+
+      supabaseAdmin
+        .from("clean_sheet_picks")
+        .select(`
+          member_id,
+          club_id
+        `)
+        .eq(
+          "matchweek_id",
+          currentMatchweekId
+        ),
+
+      supabaseAdmin
+        .from("goals")
+        .select(`
+          player_id,
+          own_goal,
+          fixture_id
+        `)
+        .in(
+          "fixture_id",
+          fixtureIds
+        ),
+
+      supabaseAdmin
+        .from("assists")
+        .select(`
+          player_id,
+          fixture_id
+        `)
+        .in(
+          "fixture_id",
+          fixtureIds
+        ),
+
+      supabaseAdmin
+        .from("clean_sheets")
+        .select(`
+          club_id,
+          fixture_id
+        `)
+        .in(
+          "fixture_id",
+          fixtureIds
+        ),
+    ]);
+
+    if (picksResult.error) {
+      throw picksResult.error;
     }
 
-    for (const fixture of fixtures ?? []) {
+    if (goalPicksResult.error) {
+      throw goalPicksResult.error;
+    }
+
+    if (assistPicksResult.error) {
+      throw assistPicksResult.error;
+    }
+
+    if (
+      cleanSheetPicksResult.error
+    ) {
+      throw cleanSheetPicksResult.error;
+    }
+
+    if (goalsResult.error) {
+      throw goalsResult.error;
+    }
+
+    if (assistsResult.error) {
+      throw assistsResult.error;
+    }
+
+    if (cleanSheetsResult.error) {
+      throw cleanSheetsResult.error;
+    }
+
+    picks =
+      picksResult.data ?? [];
+
+    goalPicks =
+      goalPicksResult.data ?? [];
+
+    assistPicks =
+      assistPicksResult.data ?? [];
+
+    cleanSheetPicks =
+      cleanSheetPicksResult.data ??
+      [];
+
+    goals =
+      goalsResult.data ?? [];
+
+    assists =
+      assistsResult.data ?? [];
+
+    cleanSheets =
+      cleanSheetsResult.data ?? [];
+  }
+
+  /*
+   * ---------------------------------------------------------
+   * MATCH PREDICTION POINTS
+   * ---------------------------------------------------------
+   */
+
+  /*
+   * Build a map of picks by fixture.
+   *
+   * This avoids repeatedly filtering the entire
+   * picks array for every fixture.
+   */
+
+  const picksByFixture = new Map<
+    number,
+    Array<{
+      member_id: number;
+      fixture_id: number;
+      predicted_result: string;
+    }>
+  >();
+
+  for (const pick of picks) {
+    const existing =
+      picksByFixture.get(
+        pick.fixture_id
+      ) ?? [];
+
+    existing.push(pick);
+
+    picksByFixture.set(
+      pick.fixture_id,
+      existing
+    );
+  }
+
+  for (const fixture of fixtures) {
+    if (
+      !fixture.finished ||
+      fixture.home_score === null ||
+      fixture.away_score === null
+    ) {
+      continue;
+    }
+
+    let actualResult: string;
+
+    if (
+      fixture.home_score >
+      fixture.away_score
+    ) {
+      actualResult = "HOME";
+    } else if (
+      fixture.away_score >
+      fixture.home_score
+    ) {
+      actualResult = "AWAY";
+    } else {
+      actualResult = "DRAW";
+    }
+
+    const fixturePicks =
+      picksByFixture.get(
+        fixture.fixture_id
+      ) ?? [];
+
+    for (const pick of fixturePicks) {
       if (
-        !fixture.finished ||
-        fixture.home_score === null ||
-        fixture.away_score === null
+        pick.predicted_result !==
+        actualResult
       ) {
         continue;
       }
 
-      let actualResult: string;
+      let points = 1;
 
       if (
-        fixture.home_score >
-        fixture.away_score
+        fixture.fixture_id ===
+        matchweek?.game_of_the_week_fixture_id
       ) {
-        actualResult = "HOME";
+        points = 3;
       } else if (
-        fixture.away_score >
-        fixture.home_score
+        fixture.fixture_id ===
+        matchweek?.featured_match_fixture_id
       ) {
-        actualResult = "AWAY";
-      } else {
-        actualResult = "DRAW";
+        points = 2;
       }
 
-      const fixturePicks =
-        (picks ?? []).filter(
-          (pick) =>
-            pick.fixture_id ===
-            fixture.fixture_id
-        );
-
-      for (const pick of fixturePicks) {
-        if (
-          pick.predicted_result !==
-          actualResult
-        ) {
-          continue;
-        }
-
-        let points = 1;
-
-        if (
-          fixture.fixture_id ===
-          matchweek
-            ?.game_of_the_week_fixture_id
-        ) {
-          points = 3;
-        } else if (
-          fixture.fixture_id ===
-          matchweek
-            ?.featured_match_fixture_id
-        ) {
-          points = 2;
-        }
-
-        totals.set(
-          pick.member_id,
-          (totals.get(pick.member_id) ?? 0) +
-            points
-        );
-      }
+      totals.set(
+        pick.member_id,
+        (totals.get(
+          pick.member_id
+        ) ?? 0) + points
+      );
     }
   }
 
@@ -342,107 +598,100 @@ export async function getLiveSeasonStandings(
    * ---------------------------------------------------------
    */
 
-  const { data: goalPicks, error: goalPicksError } =
-    await supabaseAdmin
-      .from("goal_scorer_picks")
-      .select(`
-        member_id,
-        player_id
-      `)
-      .eq(
-        "matchweek_id",
-        currentMatchweekId
-      );
+  if (goalPicks.length > 0) {
+    const goalPlayerIds = [
+      ...new Set(
+        goalPicks.map(
+          (pick) => pick.player_id
+        )
+      ),
+    ];
 
-  if (goalPicksError) {
-    throw goalPicksError;
-  }
-
-  const goalPlayerIds = [
-    ...new Set(
-      (goalPicks ?? []).map(
-        (pick) => pick.player_id
-      )
-    ),
-  ];
-
-  const { data: goalPlayers, error: goalPlayersError } =
-    goalPlayerIds.length > 0
-      ? await supabaseAdmin
-          .from("players")
-          .select(`
-            player_id,
-            position
-          `)
-          .in(
-            "player_id",
-            goalPlayerIds
-          )
-      : { data: [], error: null };
-
-  if (goalPlayersError) {
-    throw goalPlayersError;
-  }
-
-  const playerPositions = new Map(
-    (goalPlayers ?? []).map(
-      (player) => [
-        player.player_id,
-        player.position,
-      ]
-    )
-  );
-
-  const { data: goals, error: goalsError } =
-    await supabaseAdmin
-      .from("goals")
+    const {
+      data: goalPlayers,
+      error: goalPlayersError,
+    } = await supabaseAdmin
+      .from("players")
       .select(`
         player_id,
-        own_goal,
-        fixture_id
+        position
       `)
       .in(
-        "fixture_id",
-        fixtureIds
+        "player_id",
+        goalPlayerIds
       );
 
-  if (goalsError) {
-    throw goalsError;
-  }
-
-  for (const goal of goals ?? []) {
-    if (goal.own_goal) {
-      continue;
+    if (goalPlayersError) {
+      throw goalPlayersError;
     }
 
-    const position =
-      playerPositions.get(
-        goal.player_id
-      ) ?? "FWD";
+    const playerPositions =
+      new Map<
+        number,
+        string
+      >(
+        (goalPlayers ?? []).map(
+          (player) => [
+            player.player_id,
+            player.position,
+          ]
+        )
+      );
 
     /*
-     * Use the same scoring function that the actual
-     * gameweek scoring process uses.
+     * Map goal scorer picks by player.
      */
-  
-    const points =
-      getGoalPointsByPosition(
-        position
+
+    const goalPicksByPlayer =
+      new Map<
+        number,
+        number[]
+      >();
+
+    for (const pick of goalPicks) {
+      const existing =
+        goalPicksByPlayer.get(
+          pick.player_id
+        ) ?? [];
+
+      existing.push(
+        pick.member_id
       );
 
-    const memberGoalPicks =
-      (goalPicks ?? []).filter(
-        (pick) =>
-          pick.player_id ===
+      goalPicksByPlayer.set(
+        pick.player_id,
+        existing
+      );
+    }
+
+    for (const goal of goals) {
+      if (goal.own_goal) {
+        continue;
+      }
+
+      const position =
+        playerPositions.get(
           goal.player_id
-      );
+        ) ?? "FWD";
 
-    for (const pick of memberGoalPicks) {
-      totals.set(
-        pick.member_id,
-        (totals.get(pick.member_id) ?? 0) +
-          points
-      );
+      const points =
+        getGoalPointsByPosition(
+          position
+        );
+
+      const memberIds =
+        goalPicksByPlayer.get(
+          goal.player_id
+        ) ?? [];
+
+      for (const memberId of memberIds) {
+        totals.set(
+          memberId,
+          (totals.get(
+            memberId
+          ) ?? 0) + points
+        );
+      }
     }
   }
 
@@ -452,51 +701,44 @@ export async function getLiveSeasonStandings(
    * ---------------------------------------------------------
    */
 
-  const { data: assistPicks, error: assistPicksError } =
-    await supabaseAdmin
-      .from("assists_picks")
-      .select(`
-        member_id,
-        player_id
-      `)
-      .eq(
-        "matchweek_id",
-        currentMatchweekId
-      );
+  /*
+   * Map assist picks by player.
+   */
 
-  if (assistPicksError) {
-    throw assistPicksError;
+  const assistPicksByPlayer =
+    new Map<
+      number,
+      number[]
+    >();
+
+  for (const pick of assistPicks) {
+    const existing =
+      assistPicksByPlayer.get(
+        pick.player_id
+      ) ?? [];
+
+    existing.push(
+      pick.member_id
+    );
+
+    assistPicksByPlayer.set(
+      pick.player_id,
+      existing
+    );
   }
 
-  const { data: assists, error: assistsError } =
-    await supabaseAdmin
-      .from("assists")
-      .select(`
-        player_id,
-        fixture_id
-      `)
-      .in(
-        "fixture_id",
-        fixtureIds
-      );
+  for (const assist of assists) {
+    const memberIds =
+      assistPicksByPlayer.get(
+        assist.player_id
+      ) ?? [];
 
-  if (assistsError) {
-    throw assistsError;
-  }
-
-  for (const assist of assists ?? []) {
-    const memberAssistPicks =
-      (assistPicks ?? []).filter(
-        (pick) =>
-          pick.player_id ===
-          assist.player_id
-      );
-
-    for (const pick of memberAssistPicks) {
+    for (const memberId of memberIds) {
       totals.set(
-        pick.member_id,
-        (totals.get(pick.member_id) ?? 0) +
-          2
+        memberId,
+        (totals.get(
+          memberId
+        ) ?? 0) + 2
       );
     }
   }
@@ -507,51 +749,48 @@ export async function getLiveSeasonStandings(
    * ---------------------------------------------------------
    */
 
-  const { data: cleanSheetPicks, error: cleanSheetPicksError } =
-    await supabaseAdmin
-      .from("clean_sheet_picks")
-      .select(`
-        member_id,
-        club_id
-      `)
-      .eq(
-        "matchweek_id",
-        currentMatchweekId
-      );
+  /*
+   * Map clean sheet picks by club.
+   */
 
-  if (cleanSheetPicksError) {
-    throw cleanSheetPicksError;
+  const cleanSheetPicksByClub =
+    new Map<
+      number,
+      number[]
+    >();
+
+  for (
+    const pick of cleanSheetPicks
+  ) {
+    const existing =
+      cleanSheetPicksByClub.get(
+        pick.club_id
+      ) ?? [];
+
+    existing.push(
+      pick.member_id
+    );
+
+    cleanSheetPicksByClub.set(
+      pick.club_id,
+      existing
+    );
   }
 
-  const { data: cleanSheets, error: cleanSheetsError } =
-    await supabaseAdmin
-      .from("clean_sheets")
-      .select(`
-        club_id,
-        fixture_id
-      `)
-      .in(
-        "fixture_id",
-        fixtureIds
-      );
+  for (
+    const cleanSheet of cleanSheets
+  ) {
+    const memberIds =
+      cleanSheetPicksByClub.get(
+        cleanSheet.club_id
+      ) ?? [];
 
-  if (cleanSheetsError) {
-    throw cleanSheetsError;
-  }
-
-  for (const cleanSheet of cleanSheets ?? []) {
-    const memberPicks =
-      (cleanSheetPicks ?? []).filter(
-        (pick) =>
-          pick.club_id ===
-          cleanSheet.club_id
-      );
-
-    for (const pick of memberPicks) {
+    for (const memberId of memberIds) {
       totals.set(
-        pick.member_id,
-        (totals.get(pick.member_id) ?? 0) +
-          3
+        memberId,
+        (totals.get(
+          memberId
+        ) ?? 0) + 3
       );
     }
   }
@@ -563,19 +802,31 @@ export async function getLiveSeasonStandings(
    */
 
   const liveStandings = [
-    ...(members ?? []),
+    ...members,
   ]
     .map((member) => ({
-      member_id: member.member_id,
+      member_id:
+        member.member_id,
       points:
-        totals.get(member.member_id) ?? 0,
+        totals.get(
+          member.member_id
+        ) ?? 0,
     }))
     .sort((a, b) => {
-      if (b.points !== a.points) {
-        return b.points - a.points;
+      if (
+        b.points !==
+        a.points
+      ) {
+        return (
+          b.points -
+          a.points
+        );
       }
 
-      return a.member_id - b.member_id;
+      return (
+        a.member_id -
+        b.member_id
+      );
     })
     .map((member, index) => ({
       ...member,

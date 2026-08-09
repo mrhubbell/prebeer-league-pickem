@@ -1,9 +1,7 @@
 import PageContainer from "@/components/layout/PageContainer";
 import LeagueHeader from "@/components/layout/LeagueHeader";
 import BottomNavigation from "@/components/navigation/BottomNavigation";
-
 import PicksBoard from "@/components/picks/PicksBoard";
-
 import { getCurrentGameweekFixtures } from "@/services/picksService";
 
 export default async function PicksPage() {
@@ -17,7 +15,7 @@ export default async function PicksPage() {
   return (
     <PageContainer>
 
-      <LeagueHeader />
+      <LeagueHeader showLogo={false} />
 
       <PicksBoard
         weekNumber={weekNumber}
