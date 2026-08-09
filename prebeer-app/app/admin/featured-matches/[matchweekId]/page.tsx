@@ -1,3 +1,5 @@
+import PageContainer from "@/components/layout/PageContainer";
+import BottomNavigation from "@/components/navigation/BottomNavigation";
 import Link from "next/link";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import FeaturedMatchSelector from "@/components/commissioner/FeaturedMatchSelector";
@@ -45,22 +47,25 @@ export default async function GameweekPage({
   if (fixtureError) throw fixtureError;
 
   return (
-    <main className="mx-auto max-w-6xl p-8">
-
+  <PageContainer>
+    <div className="space-y-5 pb-24">
+      
       <Link
-        href="/commissioner/featured-matches"
+        href="/admin/featured-matches"
         className="text-amber-400 hover:underline"
       >
         ← Back to Featured Matches
       </Link>
 
-      <h1 className="mt-6 text-4xl font-black">
-        Gameweek {matchweek.week_number}
-      </h1>
+      <div>
+        <h1 className="mt-4 text-4xl font-black">
+          Gameweek {matchweek.week_number}
+        </h1>
 
-      <p className="mt-2 text-slate-400">
-        Select one Featured Match and one Game of the Week.
-      </p>
+        <p className="mt-2 text-slate-400">
+          Select one Featured Match and one Game of the Week.
+        </p>
+      </div>
 
       <div className="mt-8">
         <FeaturedMatchSelector
@@ -75,6 +80,9 @@ export default async function GameweekPage({
         />
       </div>
 
-    </main>
-  );
+    </div>
+
+    <BottomNavigation />
+  </PageContainer>
+);
 }

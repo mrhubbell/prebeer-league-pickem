@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import { getDashboardData } from "@/services/dashboardService";
 
 export async function GET(request: Request) {
   try {
@@ -10,7 +9,7 @@ export async function GET(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          message: "You must be logged in to view your dashboard.",
+          message: "Not authenticated.",
         },
         { status: 401 }
       );
@@ -27,7 +26,7 @@ export async function GET(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          message: "Your login session is invalid or expired.",
+          message: "Invalid or expired session.",
         },
         { status: 401 }
       );
@@ -36,7 +35,16 @@ export async function GET(request: Request) {
     const { data: member, error: memberError } =
       await supabaseAdmin
         .from("members")
-        .select("member_id")
+        .select(`
+          member_id,
+          first_name,
+          last_name,
+          display_name,
+          team_name,
+          email,
+          active,
+          role
+        `)
         .eq("profile_id", user.id)
         .maybeSingle();
 
@@ -48,28 +56,27 @@ export async function GET(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          message:
-            "No league member is associated with this account.",
+          message: "No league member is associated with this account.",
         },
-        { status: 403 }
+        { status: 404 }
       );
     }
 
-    const dashboard = await getDashboardData(
-      member.member_id
-    );
-
     return NextResponse.json({
       success: true,
-      dashboard,
+      user: {
+        id: user.id,
+        email: user.email,
+      },
+      member,
     });
-  } catch (error) {
-    console.error("Dashboard error:", error);
+  } catch (error: any) {
+    console.error("Auth/me error:", error);
 
     return NextResponse.json(
       {
         success: false,
-        message: "Unable to load dashboard.",
+        message: error?.message || "Unable to identify member.",
       },
       { status: 500 }
     );

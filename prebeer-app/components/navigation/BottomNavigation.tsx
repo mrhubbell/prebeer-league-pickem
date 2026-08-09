@@ -5,45 +5,62 @@ import { usePathname } from "next/navigation";
 import {
   House,
   Trophy,
-  Users,
   Shield,
   Crosshair,
 } from "lucide-react";
 
+import { useMember } from "@/context/MemberContext";
+
 export default function BottomNavigation() {
   const pathname = usePathname();
+  const { currentMember, loading } = useMember();
+
+  /*
+   * Don't show the navigation while we are determining
+   * whether the visitor is logged in.
+   */
+  if (loading) {
+    return null;
+  }
+
+  /*
+   * Logged-out visitors should only see the public
+   * landing page and its Log In / Join the League options.
+   */
+  if (!currentMember.memberId) {
+    return null;
+  }
 
   const navItems = [
-    {
-      label: "Home",
-      href: "/",
-      icon: House,
-    },
-    {
-      label: "Picks",
-      href: "/picks",
-      icon: Crosshair,
-    },
-    {
-      label: "Standings",
-      href: "/standings",
-      icon: Trophy,
-    },
-    {
-      label: "League",
-      href: "/league",
-      icon: Users,
-    },
-    {
-      label: "Admin",
-      href: "/admin",
-      icon: Shield,
-    },
-  ];
+  {
+    label: "Home",
+    href: "/",
+    icon: House,
+  },
+  {
+    label: "Picks",
+    href: "/picks",
+    icon: Crosshair,
+  },
+  {
+    label: "Standings",
+    href: "/standings",
+    icon: Trophy,
+  },
+  ...(currentMember.role === "COMMISSIONER"
+    ? [
+        {
+          label: "Admin",
+          href: "/admin",
+          icon: Shield,
+        },
+      ]
+    : []),
+];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 border-t border-slate-800 bg-slate-950/95 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-md justify-around py-3">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-800 bg-slate-950/95 backdrop-blur">
+      <div className="mx-auto flex max-w-md items-center justify-around px-4 py-3">
         {navItems.map((item) => {
           const Icon = item.icon;
           const active = pathname === item.href;
@@ -59,6 +76,7 @@ export default function BottomNavigation() {
               }`}
             >
               <Icon size={22} />
+
               <span className="mt-1 text-xs">
                 {item.label}
               </span>

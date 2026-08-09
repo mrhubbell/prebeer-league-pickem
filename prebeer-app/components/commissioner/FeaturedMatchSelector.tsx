@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { createClient } from "@supabase/supabase-js";
 
 interface Fixture {
   fixture_id: number;
@@ -16,28 +17,39 @@ interface Props {
   initialGameOfWeek: number | null;
 }
 
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
 export default function FeaturedMatchSelector({
   matchweekId,
   fixtures,
   initialFeaturedMatch,
   initialGameOfWeek,
 }: Props) {
-  const [featuredMatch, setFeaturedMatch] = useState<number | null>(
-    initialFeaturedMatch
-  );
-  const [gameOfWeek, setGameOfWeek] = useState<number | null>(
-    initialGameOfWeek
-  );
+  const [featuredMatch, setFeaturedMatch] =
+    useState<number | null>(initialFeaturedMatch);
+
+  const [gameOfWeek, setGameOfWeek] =
+    useState<number | null>(initialGameOfWeek);
+
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
 
   function selectFeatured(fixtureId: number) {
-    if (gameOfWeek === fixtureId) setGameOfWeek(null);
+    if (gameOfWeek === fixtureId) {
+      setGameOfWeek(null);
+    }
+
     setFeaturedMatch(fixtureId);
   }
 
   function selectGameOfWeek(fixtureId: number) {
-    if (featuredMatch === fixtureId) setFeaturedMatch(null);
+    if (featuredMatch === fixtureId) {
+      setFeaturedMatch(null);
+    }
+
     setGameOfWeek(fixtureId);
   }
 
@@ -46,12 +58,21 @@ export default function FeaturedMatchSelector({
     setMessage("");
 
     try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error("Not authenticated.");
+      }
+
       const response = await fetch(
-        "/api/commissioner/featured-matches/save",
+        "/api/admin/featured-matches/save",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
           },
           body: JSON.stringify({
             matchweekId,
@@ -64,86 +85,136 @@ export default function FeaturedMatchSelector({
       const result = await response.json();
 
       if (!response.ok || !result.success) {
-        throw new Error(result.message ?? "Unable to save.");
+        throw new Error(
+          result.message ?? "Unable to save."
+        );
       }
 
       setMessage("✅ Featured Matches Saved!");
     } catch (err: any) {
-      setMessage(err.message ?? "Unable to save.");
+      setMessage(
+        err.message ?? "Unable to save."
+      );
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
-      <div className="grid grid-cols-[1fr_180px_200px] gap-4 border-b border-slate-700 bg-slate-800 px-6 py-4 font-bold">
-        <div>Fixture</div>
-        <div className="text-center">⭐ Featured Match</div>
-        <div className="text-center">🏆 Game of the Week</div>
+    <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">
+
+      {/* Header */}
+      <div className="border-b border-slate-700 px-5 py-4">
+        <p className="text-sm font-bold text-slate-300">
+          Select Featured Matches
+        </p>
+
+        <p className="mt-1 text-xs text-slate-500">
+          Select one Featured Match and one Game of the Week.
+        </p>
       </div>
 
+      {/* Fixtures */}
       {fixtures.map((fixture) => {
-        const isFeatured = featuredMatch === fixture.fixture_id;
-        const isGameOfWeek = gameOfWeek === fixture.fixture_id;
+        const isFeatured =
+          featuredMatch === fixture.fixture_id;
+
+        const isGameOfWeek =
+          gameOfWeek === fixture.fixture_id;
 
         return (
           <div
             key={fixture.fixture_id}
-            className="grid grid-cols-[1fr_180px_200px] items-center gap-4 border-b border-slate-800 px-6 py-4 last:border-0"
+            className={`border-b border-slate-800 p-5 last:border-0 ${
+              isFeatured
+                ? "bg-amber-400/5 ring-1 ring-inset ring-amber-400"
+                : isGameOfWeek
+                ? "bg-blue-500/5 ring-1 ring-inset ring-blue-500"
+                : ""
+            }`}
           >
+
+            {/* Fixture */}
             <div>
-              <p className="font-semibold">
-                {(fixture.clubs as any).club_name} {" vs "} {(fixture.away as any).club_name}
+              <p className="text-base font-bold text-white">
+                {(fixture.clubs as any).club_name}
+                {" vs "}
+                {(fixture.away as any).club_name}
               </p>
+
               <p className="mt-1 text-xs text-slate-400">
-                {new Intl.DateTimeFormat("en-US", {
-                  weekday: "short",
-                  month: "short",
-                  day: "numeric",
-                  hour: "numeric",
-                  minute: "2-digit",
-                  timeZone: "America/New_York",
-                }).format(new Date(fixture.kickoff_time))}
+                {new Intl.DateTimeFormat(
+                  "en-US",
+                  {
+                    weekday: "short",
+                    month: "short",
+                    day: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
+                    timeZone: "America/New_York",
+                  }
+                ).format(
+                  new Date(fixture.kickoff_time)
+                )}
               </p>
             </div>
 
-            <div className="flex justify-center">
+            {/* Buttons */}
+            <div className="mt-4 grid gap-2">
+
               <button
-                onClick={() => selectFeatured(fixture.fixture_id)}
-                className={`w-40 rounded-lg px-3 py-2 font-semibold transition ${
+                type="button"
+                onClick={() =>
+                  selectFeatured(
+                    fixture.fixture_id
+                  )
+                }
+                className={`w-full rounded-lg px-4 py-3 text-sm font-semibold transition ${
                   isFeatured
                     ? "bg-amber-400 text-slate-900"
-                    : "border border-slate-700 hover:border-amber-400"
+                    : "border border-slate-700 text-slate-300 hover:border-amber-400 hover:text-amber-300"
                 }`}
               >
-                {isFeatured ? "⭐ Selected" : "Select"}
+                {isFeatured
+                  ? "⭐ Featured Match Selected"
+                  : "⭐ Select Featured Match"}
               </button>
-            </div>
 
-            <div className="flex justify-center">
               <button
-                onClick={() => selectGameOfWeek(fixture.fixture_id)}
-                className={`w-44 rounded-lg px-3 py-2 font-semibold transition ${
+                type="button"
+                onClick={() =>
+                  selectGameOfWeek(
+                    fixture.fixture_id
+                  )
+                }
+                className={`w-full rounded-lg px-4 py-3 text-sm font-semibold transition ${
                   isGameOfWeek
                     ? "bg-blue-600 text-white"
-                    : "border border-slate-700 hover:border-blue-500"
+                    : "border border-slate-700 text-slate-300 hover:border-blue-500 hover:text-blue-300"
                 }`}
               >
-                {isGameOfWeek ? "🏆 Selected" : "Select"}
+                {isGameOfWeek
+                  ? "🏆 Game of the Week Selected"
+                  : "🏆 Select Game of the Week"}
               </button>
+
             </div>
           </div>
         );
       })}
 
-      <div className="border-t border-slate-700 p-6 space-y-4">
+      {/* Save */}
+      <div className="space-y-4 border-t border-slate-700 p-5">
+
         <button
+          type="button"
           onClick={handleSave}
           disabled={saving}
           className="w-full rounded-xl bg-amber-400 py-4 text-lg font-bold text-slate-900 transition hover:brightness-110 disabled:opacity-60"
         >
-          {saving ? "Saving..." : "Save Featured Matches"}
+          {saving
+            ? "Saving..."
+            : "Save Featured Matches"}
         </button>
 
         {message && (
@@ -151,6 +222,7 @@ export default function FeaturedMatchSelector({
             {message}
           </div>
         )}
+
       </div>
     </div>
   );

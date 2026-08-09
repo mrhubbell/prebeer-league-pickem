@@ -1,5 +1,6 @@
 "use client";
 
+import { createClient } from "@supabase/supabase-js";
 import { useMember } from "@/context/MemberContext";
 import { useEffect, useMemo, useState } from "react";
 import FixtureCard from "./FixtureCard";
@@ -298,27 +299,41 @@ export default function PicksBoard({
         );
 
   async function handleSave() {
-    const memberId = localStorage.getItem("memberId");
+  const memberId = currentMember.memberId;
 
-    if (!memberId) {
-      setMessage("Select a member first.");
-      return;
-    }
+  if (!memberId) {
+    setMessage("You must be logged in to save picks.");
+    return;
+  }
 
     setSaving(true);
     setMessage("");
 
+    const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
+const {
+  data: { session },
+} = await supabase.auth.getSession();
+
+if (!session?.access_token) {
+  setMessage("You must be logged in to save picks.");
+  return;
+}
+
     try {
       const response = await fetch("/api/picks/save", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          memberId: Number(memberId),
-          selections,
-        }),
-      });
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${session.access_token}`,
+  },
+  body: JSON.stringify({
+    selections,
+  }),
+});
 
       const result = await response.json();
 
@@ -464,11 +479,11 @@ export default function PicksBoard({
     new Date(fixtures[0].kickoff_time) <= now;
 
   return (
-    <div className="space-y-5 pb-24">
-      <div>
-        <h1 className="text-4xl font-black">
-          Gameweek {weekNumber}
-        </h1>
+  <div className="space-y-5 pb-24">
+    <div className="pt-4">
+      <h1 className="text-4xl font-black">
+        Gameweek {weekNumber}
+      </h1>
 
         <p className="mt-4 text-lg font-semibold">
           {completedPicks} of {totalFixtures} Picks Complete

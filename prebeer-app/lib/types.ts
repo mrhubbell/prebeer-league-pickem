@@ -8,17 +8,27 @@ export interface Gameweek {
 }
 
 export interface MyWeek {
-  picksComplete: number;
-  totalMatches: number;
-  doublePoints: string | null;
-  triplePoints: string | null;
   submitted: boolean;
+  correctPredictions: number;
+  completedPredictions: number;
+  goals: number;
+  assists: number;
+  cleanSheets: number;
+  currentRank: number | null;
+  rankChange: number;
 }
 
-export interface LeagueLeader {
-  name: string;
-  points: number;
-  weeklyGain: number;
+export interface LeagueLeaderStat {
+  teamName: string;
+  value: number;
+}
+
+export interface LeagueLeaders {
+  points: LeagueLeaderStat | null;
+  matchPredictions: LeagueLeaderStat | null;
+  goalscorers: LeagueLeaderStat | null;
+  assists: LeagueLeaderStat | null;
+  cleanSheets: LeagueLeaderStat | null;
 }
 
 export interface ActivityItem {
