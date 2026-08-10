@@ -234,6 +234,13 @@ export default function HomeContent() {
         gameweek={dashboard.gameweek}
       />
 
+      <Link
+  href="/how-it-works"
+  className="mt-4 block text-center text-sm font-semibold text-amber-400 transition hover:text-amber-300"
+>
+  📖 Did you forget how scoring works? →
+</Link>
+
       <LeagueLeaderCard
         leaders={dashboard.leaders}
       />
