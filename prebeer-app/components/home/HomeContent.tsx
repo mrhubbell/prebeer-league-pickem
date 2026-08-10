@@ -19,54 +19,57 @@ interface Dashboard {
     progress: number;
     countdown: string;
   };
+
   myWeek: {
-  submitted: false,
-  correctPredictions: 0,
-  completedPredictions: 0,
-  goals: 0,
-  assists: 0,
-  cleanSheets: 0,
-  currentRank: null,
-  rankChange: 0,
-};
+    submitted: boolean;
+    correctPredictions: number;
+    completedPredictions: number;
+    goals: number;
+    assists: number;
+    cleanSheets: number;
+    currentRank: number | null;
+    rankChange: number;
+  };
+
   leaders: {
-  points: {
-    teamName: string;
-    value: number;
-  } | null;
+    points: {
+      teamName: string;
+      value: number;
+    } | null;
 
-  matchPredictions: {
-    teamName: string;
-    value: number;
-  } | null;
+    matchPredictions: {
+      teamName: string;
+      value: number;
+    } | null;
 
-  goalscorers: {
-    teamName: string;
-    value: number;
-  } | null;
+    goalscorers: {
+      teamName: string;
+      value: number;
+    } | null;
 
-  assists: {
-    teamName: string;
-    value: number;
-  } | null;
+    assists: {
+      teamName: string;
+      value: number;
+    } | null;
 
-  cleanSheets: {
-    teamName: string;
-    value: number;
-  } | null;
-};
+    cleanSheets: {
+      teamName: string;
+      value: number;
+    } | null;
+  };
+
   fanboyClubs: {
-  position: number;
-  clubName: string;
-  played: number;
-  wins: number;
-  draws: number;
-  losses: number;
-  goalsFor: number;
-  goalsAgainst: number;
-  goalDifference: number;
-  points: number;
-}[];
+    position: number;
+    clubName: string;
+    played: number;
+    wins: number;
+    draws: number;
+    losses: number;
+    goalsFor: number;
+    goalsAgainst: number;
+    goalDifference: number;
+    points: number;
+  }[];
 }
 
 const supabase = createClient(
@@ -118,6 +121,7 @@ export default function HomeContent() {
             "Unable to load dashboard:",
             result.message
           );
+
           setDashboard(null);
         }
       } catch (error) {
@@ -125,6 +129,7 @@ export default function HomeContent() {
           "Unable to load dashboard:",
           error
         );
+
         setDashboard(null);
       } finally {
         setDashboardLoading(false);
@@ -151,6 +156,7 @@ export default function HomeContent() {
     return (
       <div className="space-y-8 py-8">
 
+        {/* Welcome */}
         <div className="text-center">
           <p className="text-xs uppercase tracking-[0.35em] text-amber-400">
             PRE-BEER LEAGUE PICK&apos;EM
@@ -165,6 +171,7 @@ export default function HomeContent() {
           </p>
         </div>
 
+        {/* Login / Join */}
         <div className="space-y-3">
           <Link
             href="/login"
@@ -181,33 +188,28 @@ export default function HomeContent() {
           </Link>
         </div>
 
-        <div className="border-t border-slate-800 pt-8">
-          <p className="text-xs uppercase tracking-[0.3em] text-amber-400">
-            HOW IT WORKS
-          </p>
+        {/* How It Works */}
+        <div className="border-t border-slate-800 pt-3">
 
           <h2 className="mt-3 text-2xl font-bold">
-            Make your predictions.
+            Make your predictions. Chase the points. Talk some trash.
           </h2>
 
           <p className="mt-3 text-slate-400">
-            Predict the results of each week&apos;s Premier
-            League matches and compete against the rest of
-            the league.
-          </p>
-        </div>
-
-        <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-amber-400">
-            SCORING
+            Each gameweek, predict the results of every Premier
+            League match, then make your bonus picks for
+            goalscorers, assists, and clean sheets. Smart picks
+            earn points, bold picks can pay off big, and there&apos;s
+            always another week to climb the table.
           </p>
 
-          <div className="mt-4 space-y-3 text-slate-300">
-            <p>⚽ Match Predictions</p>
-            <p>🥅 Goalscorers</p>
-            <p>🎯 Assists</p>
-            <p>🧤 Clean Sheets</p>
-          </div>
+          <Link
+            href="/how-it-works"
+            className="mt-4 inline-block text-sm font-bold text-amber-400 transition hover:text-amber-300"
+          >
+            Learn how scoring works →
+          </Link>
+
         </div>
 
       </div>
@@ -226,18 +228,28 @@ export default function HomeContent() {
   }
 
   return (
-  <div className="space-y-5 pb-24">
+    <div className="space-y-5 pb-24">
 
-    <GameweekHero gameweek={dashboard.gameweek} />
+      <GameweekHero
+        gameweek={dashboard.gameweek}
+      />
 
-    <LeagueLeaderCard leaders={dashboard.leaders} />
+      <LeagueLeaderCard
+        leaders={dashboard.leaders}
+      />
 
-    <div className="grid grid-cols-2 gap-4">
-      <MyPicksCard myWeek={dashboard.myWeek} />
+      <div className="grid grid-cols-2 gap-4">
 
-      <FanboyClubsCard clubs={dashboard.fanboyClubs} />
+        <MyPicksCard
+          myWeek={dashboard.myWeek}
+        />
+
+        <FanboyClubsCard
+          clubs={dashboard.fanboyClubs}
+        />
+
+      </div>
+
     </div>
-
-  </div>
-);
+  );
 }

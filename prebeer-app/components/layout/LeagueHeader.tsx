@@ -30,13 +30,10 @@ export default function LeagueHeader({
   return (
     <header>
       {currentMember.displayName && (
-        <div className="mb-4 flex items-center justify-between text-sm text-slate-400">
-          <span>
-            Welcome! Cheers{" "}
-            <span className="font-semibold text-white">
-              {currentMember.displayName}!
-            </span>
-          </span>
+        <div className="mb-4 flex items-center justify-end text-sm text-slate-400 gap-2">
+          
+            Welcome, {currentMember.displayName}! 
+            
 
           <button
             onClick={handleLogout}

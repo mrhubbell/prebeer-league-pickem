@@ -1,5 +1,6 @@
 "use client";
 
+import PublicHeader from "@/components/layout/PublicHeader";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -38,20 +39,12 @@ export default function LoginPage() {
     <main className="min-h-screen bg-slate-950 px-4 py-12 text-white">
       <div className="mx-auto max-w-md">
 
-        <div className="mb-8 text-center">
-          <h1 className="text-4xl font-black">
-            🍺 Pre-Beer League Pick&apos;Em
-          </h1>
+      <PublicHeader />
 
-          <p className="mt-3 text-slate-400">
-            Welcome back! Log in to access your league.
-          </p>
-        </div>
-
-        <div className="rounded-3xl border border-slate-800 bg-slate-900 p-6">
+          <div className="rounded-3xl border border-slate-800 bg-slate-900 p-6">
 
           <h2 className="text-2xl font-bold">
-            Log In
+            Welcome Back! 
           </h2>
 
           <form

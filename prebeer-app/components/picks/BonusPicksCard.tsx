@@ -4,6 +4,7 @@ interface Player {
   player_id: number;
   web_name: string;
   club_name: string;
+  position: string;
 }
 
 interface BonusPicksCardProps {
@@ -80,7 +81,7 @@ export default function BonusPicksCard({
       <div className="mt-8">
 
         <h3 className="mb-4 text-lg font-semibold text-amber-400">
-          ⚽ Golden Boot
+          ⚽ Goal Scorers
         </h3>
 
         <div className="space-y-4">
@@ -100,7 +101,9 @@ export default function BonusPicksCard({
               Goalscorer #1
             </option>
 
-            {players.map((player) => (
+            {players
+  .filter((player) => player.position !== "GK")
+  .map((player) => (
               <option
                 key={player.player_id}
                 value={player.player_id}
@@ -108,7 +111,7 @@ export default function BonusPicksCard({
                   player.player_id === goalPick2
                 }
               >
-                {player.club_name} • {player.web_name}
+                {player.club_name} • {player.web_name} • {player.position}
               </option>
             ))}
           </select>
@@ -128,7 +131,9 @@ export default function BonusPicksCard({
               Goalscorer #2
             </option>
 
-            {players.map((player) => (
+            {players
+  .filter((player) => player.position !== "GK")
+  .map((player) => (
               <option
                 key={player.player_id}
                 value={player.player_id}
@@ -136,7 +141,7 @@ export default function BonusPicksCard({
                   player.player_id === goalPick1
                 }
               >
-                {player.club_name} • {player.web_name}
+                {player.club_name} • {player.web_name} • {player.position}
               </option>
             ))}
           </select>
@@ -150,7 +155,7 @@ export default function BonusPicksCard({
       <div className="mt-10 border-t border-slate-800 pt-6">
 
   <h3 className="mb-4 text-lg font-semibold text-amber-400">
-    🎯 Playmaker
+    🎯 Assists
   </h3>
 
   <div className="space-y-4">
@@ -176,7 +181,7 @@ export default function BonusPicksCard({
       value={player.player_id}
       disabled={player.player_id === assistPick2}
     >
-      {player.club_name} • {player.web_name}
+      {player.club_name} • {player.web_name} • {player.position}
     </option>
   ))}
 </select>
@@ -202,7 +207,7 @@ export default function BonusPicksCard({
       value={player.player_id}
       disabled={player.player_id === assistPick1}
     >
-      {player.club_name} • {player.web_name}
+      {player.club_name} • {player.web_name} • {player.position}
     </option>
   ))}
 </select>

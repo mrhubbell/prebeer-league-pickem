@@ -68,14 +68,11 @@ export function getGoalPointsByPosition(
 
   switch (position) {
 
-    case "GK":
-      return 6;
-
-    case "DEF":
-      return 5;
+      case "DEF":
+      return 12;
 
     case "MID":
-      return 3;
+      return 4;
 
     case "FWD":
     default:

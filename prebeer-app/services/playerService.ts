@@ -7,6 +7,7 @@ export interface Player {
   last_name: string;
   club_id: number;
   club_name: string;
+  position: string;
 }
 
 export async function getPlayers() {
@@ -18,6 +19,7 @@ export async function getPlayers() {
       first_name,
       last_name,
       club_id,
+      position,
       clubs!players_club_id_fkey (
         club_name
       )
@@ -33,6 +35,7 @@ export async function getPlayers() {
     last_name: player.last_name,
     club_id: player.club_id,
     club_name: player.clubs?.club_name ?? "",
+    position: player.position,
   })) as Player[];
 
   players.sort((a, b) => {
