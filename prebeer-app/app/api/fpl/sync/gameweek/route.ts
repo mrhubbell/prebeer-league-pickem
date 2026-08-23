@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server";
 
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import { syncGameweekPerformance } from "@/services/fpl/gameweekPerformanceSync";
+import { processGameweek } from "@/services/fpl/processGameweek";
 
 export async function GET() {
   try {
     const { data: matchweek, error } =
       await supabaseAdmin
         .from("matchweeks")
-        .select("matchweek_id, week_number")
-        .eq("status", "LOCKED")
+        .select("matchweek_id, week_number, status")
+        .in("status", ["OPEN", "LOCKED"])
         .order("week_number", {
           ascending: false,
         })
@@ -23,22 +23,22 @@ export async function GET() {
     if (!matchweek) {
       return NextResponse.json({
         success: true,
-        message: "No completed Gameweek is available to sync.",
+        message:
+          "No open or completed Gameweek is available to sync.",
         gameweekId: null,
         dryRun: true,
       });
     }
 
-    const result =
-      await syncGameweekPerformance(
-        matchweek.matchweek_id,
-        { dryRun: true }
-      );
+    const result = await processGameweek(
+      matchweek.matchweek_id,
+      {
+        dryRun: true,
+      }
+    );
 
-    return NextResponse.json({
-      success: true,
-      ...result,
-    });
+    return NextResponse.json(result);
+    
   } catch (err) {
     console.error(
       "GAMEWEEK SYNC ERROR:",

@@ -90,19 +90,26 @@ export async function syncGameweekPerformance(
     error: fixtureError,
   } = await supabaseAdmin
     .from("fixtures")
-    .select("fixture_id, finished")
-    .eq("matchweek_id", gameweekId)
-    .eq("finished", true);
+.select(
+  "fixture_id, finished, finished_provisional"
+)
+.eq("matchweek_id", gameweekId);
 
   if (fixtureError) {
     throw fixtureError;
   }
 
   const finishedFixtureIds = new Set(
-    (fixtures ?? []).map(
+  (fixtures ?? [])
+    .filter(
+      (fixture) =>
+        fixture.finished ||
+        fixture.finished_provisional
+    )
+    .map(
       (fixture) => fixture.fixture_id
     )
-  );
+);
 
   // Only keep results belonging to completed fixtures
   const goals = transformed.goals.filter(

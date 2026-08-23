@@ -24,6 +24,8 @@ export async function syncFixtures() {
     away_score: fixture.team_a_score,
     started: fixture.started,
     finished: fixture.finished,
+    finished_provisional:
+      fixture.finished_provisional ?? false,
     provisional: fixture.provisional ?? false,
   }));
 
