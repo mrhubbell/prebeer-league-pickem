@@ -11,3 +11,18 @@ export async function getBootstrapData() {
 
   return response.json();
 }
+
+export async function getGameweekLive(gameweekId: number) {
+  const response = await fetch(
+    `${FPL_API}/event/${gameweekId}/live/`,
+    {
+      cache: "no-store",
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`FPL API Error ${response.status}`);
+  }
+
+  return response.json();
+}

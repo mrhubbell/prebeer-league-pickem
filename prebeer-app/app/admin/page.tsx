@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Star,
   RefreshCw,
@@ -16,6 +16,77 @@ import { useMember } from "@/context/MemberContext";
 export default function AdminPage() {
   const router = useRouter();
   const { currentMember, loading } = useMember();
+  const [syncing, setSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState("");
+  const [gameweekSyncing, setGameweekSyncing] = useState(false);
+  const [gameweekMessage, setGameweekMessage] = useState("");
+
+  const handleSync = async () => {
+  setSyncing(true);
+  setSyncMessage("");
+
+  try {
+    const response = await fetch("/api/admin/sync");
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      throw new Error(
+        result.error?.message || "Premier League sync failed."
+      );
+    }
+
+    setSyncMessage(
+      `Sync complete — ${result.players.synced} players, ${result.fixtures.synced} fixtures.`
+    );
+  } catch (err) {
+    setSyncMessage(
+      err instanceof Error
+        ? err.message
+        : "Premier League sync failed."
+    );
+  } finally {
+    setSyncing(false);
+  }
+};
+const handleGameweekSync = async () => {
+  setGameweekSyncing(true);
+  setGameweekMessage("");
+
+  try {
+    const response = await fetch(
+      "/api/fpl/sync/gameweek"
+    );
+
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      throw new Error(
+        result.error?.message ||
+          result.error ||
+          "Gameweek sync failed."
+      );
+    }
+
+    if (result.gameweekId === null) {
+      setGameweekMessage(
+        "No completed Gameweek is available to sync."
+      );
+      return;
+    }
+
+    setGameweekMessage(
+      `Gameweek ${result.gameweekId} — ${result.fixturesProcessed} fixtures, ${result.goals} goals, ${result.assists} assists, ${result.cleanSheets} clean sheets.`
+    );
+  } catch (err) {
+    setGameweekMessage(
+      err instanceof Error
+        ? err.message
+        : "Gameweek sync failed."
+    );
+  } finally {
+    setGameweekSyncing(false);
+  }
+};
 
   useEffect(() => {
     if (!loading) {
@@ -92,15 +163,55 @@ export default function AdminPage() {
           </div>
         </Link>
 
-        {/* Sync Everything */}
-        <button
-          className="w-full rounded-3xl bg-amber-400 py-5 text-xl font-bold text-slate-900 transition hover:bg-amber-300"
-        >
-          <span className="flex items-center justify-center gap-3">
-            <RefreshCw size={22} />
-            Sync Everything
-          </span>
-        </button>
+        {/* Sync Premier League Data */}
+<button
+  onClick={handleSync}
+  disabled={syncing}
+  className="w-full rounded-3xl bg-amber-400 py-5 text-xl font-bold text-slate-900 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-60"
+>
+  <span className="flex items-center justify-center gap-3">
+    <RefreshCw
+      size={22}
+      className={syncing ? "animate-spin" : ""}
+    />
+    {syncing
+      ? "Syncing Premier League Data..."
+      : "Sync Premier League Data"}
+  </span>
+</button>
+
+{/* Sync Gameweek Data */}
+<button
+  onClick={handleGameweekSync}
+  disabled={gameweekSyncing}
+  className="w-full rounded-3xl border border-amber-400 bg-slate-900 py-5 text-xl font-bold text-amber-400 transition hover:bg-amber-400 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
+>
+  <span className="flex items-center justify-center gap-3">
+    <RefreshCw
+      size={22}
+      className={
+        gameweekSyncing
+          ? "animate-spin"
+          : ""
+      }
+    />
+    {gameweekSyncing
+      ? "Syncing Gameweek Data..."
+      : "Sync Gameweek Data"}
+  </span>
+</button>
+
+{gameweekMessage && (
+  <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4 text-sm text-slate-300">
+    {gameweekMessage}
+  </div>
+)}
+
+{syncMessage && (
+  <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4 text-sm text-slate-300">
+    {syncMessage}
+  </div>
+)}
 
         {/* Database Status */}
         <div className="rounded-3xl border border-slate-800 bg-slate-900 p-6">
