@@ -105,7 +105,7 @@ export default function Leaderboard() {
                   </span>
 
                   <div className="min-w-0 flex-1">
-                    <p className="text-lg font-bold leading-tight text-white">
+                    <p className="pr-2 text-base font-bold leading-tight text-white sm:text-lg">
                       {member.team_name}
                     </p>
 
@@ -115,14 +115,14 @@ export default function Leaderboard() {
                   </div>
                 </div>
 
-                <div className="ml-4 flex flex-shrink-0 items-center gap-3">
+                <div className="ml-3 flex flex-shrink-0 items-end gap-3 sm:ml-4">
                   {member.rank_change !== 0 && (
                     <span className="text-sm">
                       {getMovementDisplay(member.rank_change)}
                     </span>
                   )}
 
-                  <div className="whitespace-nowrap text-base font-bold text-amber-400">
+                  <div className="w-16 whitespace-nowrap text-right text-base font-bold text-amber-400">
                     {member.season_points} pts
                   </div>
 
