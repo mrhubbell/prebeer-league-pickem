@@ -40,6 +40,7 @@ export async function scoreMatchPredictions(
         home_score,
         away_score,
         finished,
+        finished_provisional,
         matchweeks!fixtures_matchweek_id_fkey(
           featured_match_fixture_id,
           game_of_the_week_fixture_id
@@ -67,9 +68,12 @@ export async function scoreMatchPredictions(
 
   for (const fixture of fixtures) {
 
-    // Do not score fixtures that have not finished.
+        // Do not score fixtures that have not finished.
+    // FPL may mark completed matches as finished_provisional
+    // before marking them formally finished.
     if (
-      !fixture.finished ||
+      (!fixture.finished &&
+        !fixture.finished_provisional) ||
       fixture.home_score === null ||
       fixture.away_score === null
     ) {

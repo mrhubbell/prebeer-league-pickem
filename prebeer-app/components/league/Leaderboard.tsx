@@ -9,6 +9,10 @@ interface Standing {
   team_name: string;
   season_points: number;
   rank_change: number;
+  match_prediction_accuracy: number;
+  goalscorer_accuracy: number;
+  assist_accuracy: number;
+  clean_sheet_accuracy: number;
 }
 
 export default function Leaderboard() {
@@ -127,24 +131,24 @@ export default function Leaderboard() {
 
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <span>⚽ Match Prediction Accuracy</span>
-                      <span>--%</span>
-                    </div>
+  <span>⚽ Match Prediction Accuracy</span>
+  <span>{member.match_prediction_accuracy}%</span>
+</div>
 
-                    <div className="flex justify-between">
-                      <span>🥅 Goalscorer Accuracy</span>
-                      <span>--%</span>
-                    </div>
+<div className="flex justify-between">
+  <span>🥅 Goalscorer Accuracy</span>
+  <span>{member.goalscorer_accuracy}%</span>
+</div>
 
-                    <div className="flex justify-between">
-                      <span>🎯 Assist Accuracy</span>
-                      <span>--%</span>
-                    </div>
+<div className="flex justify-between">
+  <span>🎯 Assist Accuracy</span>
+  <span>{member.assist_accuracy}%</span>
+</div>
 
-                    <div className="flex justify-between">
-                      <span>🧤 Clean Sheet Accuracy</span>
-                      <span>--%</span>
-                    </div>
+<div className="flex justify-between">
+  <span>🧤 Clean Sheet Accuracy</span>
+  <span>{member.clean_sheet_accuracy}%</span>
+</div>
                   </div>
                 </div>
               )}

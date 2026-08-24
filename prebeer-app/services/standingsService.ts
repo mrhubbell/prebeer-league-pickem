@@ -11,6 +11,10 @@ export interface Standing {
   team_name: string;
   season_points: number;
   rank_change: number;
+  match_prediction_accuracy: number;
+  goalscorer_accuracy: number;
+  assist_accuracy: number;
+  clean_sheet_accuracy: number;
 }
 
 export async function getSeasonStandings() {
@@ -33,6 +37,460 @@ export async function getSeasonStandings() {
 
   if (rows.length === 0) {
     return [];
+  }
+
+    /*
+   * ---------------------------------------------------------
+   * GET SEASON PERFORMANCE DATA
+   * ---------------------------------------------------------
+   */
+
+  const [
+    matchPicksResult,
+    goalPicksResult,
+    assistPicksResult,
+    cleanSheetPicksResult,
+    fixturesResult,
+    goalsResult,
+    assistsResult,
+    cleanSheetsResult,
+  ] = await Promise.all([
+    supabaseAdmin
+      .from("match_picks")
+      .select(`
+        member_id,
+        fixture_id,
+        predicted_result
+      `),
+
+    supabaseAdmin
+      .from("goal_scorer_picks")
+      .select(`
+        member_id,
+        player_id,
+        matchweek_id
+      `),
+
+    supabaseAdmin
+      .from("assists_picks")
+      .select(`
+        member_id,
+        player_id,
+        matchweek_id
+      `),
+
+    supabaseAdmin
+      .from("clean_sheet_picks")
+      .select(`
+        member_id,
+        club_id,
+        matchweek_id
+      `),
+
+    supabaseAdmin
+  .from("fixtures")
+  .select(`
+    fixture_id,
+    matchweek_id,
+    home_score,
+    away_score,
+    finished,
+    finished_provisional
+  `),
+
+    supabaseAdmin
+      .from("goals")
+      .select(`
+        player_id,
+        fixture_id,
+        own_goal
+      `),
+
+    supabaseAdmin
+      .from("assists")
+      .select(`
+        player_id,
+        fixture_id
+      `),
+
+    supabaseAdmin
+      .from("clean_sheets")
+      .select(`
+        club_id,
+        fixture_id
+      `),
+  ]);
+
+  if (matchPicksResult.error) throw matchPicksResult.error;
+  if (goalPicksResult.error) throw goalPicksResult.error;
+  if (assistPicksResult.error) throw assistPicksResult.error;
+  if (cleanSheetPicksResult.error) {
+    throw cleanSheetPicksResult.error;
+  }
+  if (fixturesResult.error) throw fixturesResult.error;
+  if (goalsResult.error) throw goalsResult.error;
+  if (assistsResult.error) throw assistsResult.error;
+  if (cleanSheetsResult.error) {
+    throw cleanSheetsResult.error;
+  }
+
+  const matchPicks =
+    matchPicksResult.data ?? [];
+
+  const goalPicks =
+    goalPicksResult.data ?? [];
+
+  const assistPicks =
+    assistPicksResult.data ?? [];
+
+  const cleanSheetPicks =
+    cleanSheetPicksResult.data ?? [];
+
+  const fixtures =
+    fixturesResult.data ?? [];
+
+  const goals =
+    goalsResult.data ?? [];
+
+  const assists =
+    assistsResult.data ?? [];
+
+  const cleanSheets =
+    cleanSheetsResult.data ?? [];
+
+  /*
+   * Only completed/provisional-completed fixtures
+   * count toward accuracy.
+   *
+   * FPL can mark a fixture as finished_provisional
+   * before it is formally finished.
+   *
+   * Our fixtures table stores this as finished.
+   */
+  const completedFixtureIds = new Set(
+  fixtures
+    .filter(
+      (fixture) =>
+        (fixture.finished ||
+          fixture.finished_provisional) &&
+        fixture.home_score !== null &&
+        fixture.away_score !== null
+    )
+    .map(
+      (fixture) => fixture.fixture_id
+    )
+);
+
+  /*
+   * ---------------------------------------------------------
+   * MATCH PREDICTION ACCURACY
+   * ---------------------------------------------------------
+   */
+
+  const predictionStats =
+    new Map<
+      number,
+      {
+        selected: number;
+        correct: number;
+      }
+    >();
+
+  const fixtureMap =
+    new Map(
+      fixtures.map(
+        (fixture) => [
+          fixture.fixture_id,
+          fixture,
+        ]
+      )
+    );
+
+  for (const pick of matchPicks) {
+    if (
+      !completedFixtureIds.has(
+        pick.fixture_id
+      )
+    ) {
+      continue;
+    }
+
+    const fixture =
+      fixtureMap.get(
+        pick.fixture_id
+      );
+
+    if (!fixture) continue;
+
+    let actualResult: string;
+
+    if (
+      fixture.home_score >
+      fixture.away_score
+    ) {
+      actualResult = "HOME";
+    } else if (
+      fixture.away_score >
+      fixture.home_score
+    ) {
+      actualResult = "AWAY";
+    } else {
+      actualResult = "DRAW";
+    }
+
+    const stats =
+      predictionStats.get(
+        pick.member_id
+      ) ?? {
+        selected: 0,
+        correct: 0,
+      };
+
+    stats.selected += 1;
+
+    if (
+      pick.predicted_result ===
+      actualResult
+    ) {
+      stats.correct += 1;
+    }
+
+    predictionStats.set(
+      pick.member_id,
+      stats
+    );
+  }
+
+  /*
+   * ---------------------------------------------------------
+   * GOALSCORER ACCURACY
+   * ---------------------------------------------------------
+   */
+
+  const goalPickStats =
+    new Map<
+      number,
+      {
+        selected: number;
+        correct: number;
+      }
+    >();
+
+  const goalsByPlayer =
+    new Map<number, number>();
+
+  for (const goal of goals) {
+    if (
+      goal.own_goal ||
+      !completedFixtureIds.has(
+        goal.fixture_id
+      )
+    ) {
+      continue;
+    }
+
+    goalsByPlayer.set(
+      goal.player_id,
+      (goalsByPlayer.get(
+        goal.player_id
+      ) ?? 0) + 1
+    );
+  }
+
+  for (const pick of goalPicks) {
+    /*
+     * A goalscorer pick is eligible once
+     * at least one fixture in its matchweek
+     * has completed.
+     */
+    const hasCompletedFixture =
+      fixtures.some(
+        (fixture) =>
+          fixture.matchweek_id ===
+            pick.matchweek_id &&
+          completedFixtureIds.has(
+            fixture.fixture_id
+          )
+      );
+
+    if (!hasCompletedFixture) {
+      continue;
+    }
+
+    const stats =
+      goalPickStats.get(
+        pick.member_id
+      ) ?? {
+        selected: 0,
+        correct: 0,
+      };
+
+    stats.selected += 1;
+
+    if (
+      (goalsByPlayer.get(
+        pick.player_id
+      ) ?? 0) > 0
+    ) {
+      stats.correct += 1;
+    }
+
+    goalPickStats.set(
+      pick.member_id,
+      stats
+    );
+  }
+
+  /*
+   * ---------------------------------------------------------
+   * ASSIST ACCURACY
+   * ---------------------------------------------------------
+   */
+
+  const assistPickStats =
+    new Map<
+      number,
+      {
+        selected: number;
+        correct: number;
+      }
+    >();
+
+  const assistsByPlayer =
+    new Map<number, number>();
+
+  for (const assist of assists) {
+    if (
+      !completedFixtureIds.has(
+        assist.fixture_id
+      )
+    ) {
+      continue;
+    }
+
+    assistsByPlayer.set(
+      assist.player_id,
+      (assistsByPlayer.get(
+        assist.player_id
+      ) ?? 0) + 1
+    );
+  }
+
+  for (const pick of assistPicks) {
+    const hasCompletedFixture =
+      fixtures.some(
+        (fixture) =>
+          fixture.matchweek_id ===
+            pick.matchweek_id &&
+          completedFixtureIds.has(
+            fixture.fixture_id
+          )
+      );
+
+    if (!hasCompletedFixture) {
+      continue;
+    }
+
+    const stats =
+      assistPickStats.get(
+        pick.member_id
+      ) ?? {
+        selected: 0,
+        correct: 0,
+      };
+
+    stats.selected += 1;
+
+    if (
+      (assistsByPlayer.get(
+        pick.player_id
+      ) ?? 0) > 0
+    ) {
+      stats.correct += 1;
+    }
+
+    assistPickStats.set(
+      pick.member_id,
+      stats
+    );
+  }
+
+  /*
+   * ---------------------------------------------------------
+   * CLEAN SHEET ACCURACY
+   * ---------------------------------------------------------
+   */
+
+  const cleanSheetPickStats =
+    new Map<
+      number,
+      {
+        selected: number;
+        correct: number;
+      }
+    >();
+
+  const cleanSheetSet =
+    new Set<string>();
+
+  for (const cleanSheet of cleanSheets) {
+    if (
+      !completedFixtureIds.has(
+        cleanSheet.fixture_id
+      )
+    ) {
+      continue;
+    }
+
+    const fixture =
+      fixtureMap.get(
+        cleanSheet.fixture_id
+      );
+
+    if (!fixture) continue;
+
+    cleanSheetSet.add(
+      `${fixture.matchweek_id}-${cleanSheet.club_id}`
+    );
+  }
+
+  for (const pick of cleanSheetPicks) {
+    const hasCompletedFixture =
+      fixtures.some(
+        (fixture) =>
+          fixture.matchweek_id ===
+            pick.matchweek_id &&
+          completedFixtureIds.has(
+            fixture.fixture_id
+          )
+      );
+
+    if (!hasCompletedFixture) {
+      continue;
+    }
+
+    const stats =
+      cleanSheetPickStats.get(
+        pick.member_id
+      ) ?? {
+        selected: 0,
+        correct: 0,
+      };
+
+    stats.selected += 1;
+
+    if (
+      cleanSheetSet.has(
+        `${pick.matchweek_id}-${pick.club_id}`
+      )
+    ) {
+      stats.correct += 1;
+    }
+
+    cleanSheetPickStats.set(
+      pick.member_id,
+      stats
+    );
   }
 
   // Find the current and previous scored gameweeks.
@@ -164,15 +622,72 @@ export async function getSeasonStandings() {
             member.member_id
           );
 
-        return {
-          ...member,
-          rank_change:
-            previousRank !==
-            undefined
-              ? previousRank -
-                currentRank
-              : 0,
-        };
+        const predictionStatsForMember =
+  predictionStats.get(
+    member.member_id
+  );
+
+const goalStatsForMember =
+  goalPickStats.get(
+    member.member_id
+  );
+
+const assistStatsForMember =
+  assistPickStats.get(
+    member.member_id
+  );
+
+const cleanSheetStatsForMember =
+  cleanSheetPickStats.get(
+    member.member_id
+  );
+
+const percentage = (
+  stats:
+    | {
+        selected: number;
+        correct: number;
+      }
+    | undefined
+) =>
+  stats &&
+  stats.selected > 0
+    ? Math.round(
+        (stats.correct /
+          stats.selected) *
+          100
+      )
+    : 0;
+
+return {
+  ...member,
+  rank_change:
+    previousRank !==
+    undefined
+      ? previousRank -
+        currentRank
+      : 0,
+
+  match_prediction_accuracy:
+    percentage(
+      predictionStatsForMember
+    ),
+
+  goalscorer_accuracy:
+    percentage(
+      goalStatsForMember
+    ),
+
+  assist_accuracy:
+    percentage(
+      assistStatsForMember
+    ),
+
+  clean_sheet_accuracy:
+    percentage(
+      cleanSheetStatsForMember
+    ),
+};
       }
     );
 

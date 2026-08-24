@@ -33,7 +33,7 @@ export async function GET() {
     const result = await processGameweek(
       matchweek.matchweek_id,
       {
-        dryRun: true,
+        dryRun: false,
       }
     );
 

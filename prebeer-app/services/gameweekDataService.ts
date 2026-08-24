@@ -52,7 +52,7 @@ export async function getAssistPicks(
 ) {
 
   const { data, error } = await supabaseAdmin
-    .from("assist_picks")
+    .from("assists_picks")
     .select(`
       assist_pick_id,
       member_id,
