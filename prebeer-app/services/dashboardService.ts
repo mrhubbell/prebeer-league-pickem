@@ -33,7 +33,7 @@ export async function getDashboardData(memberId?: number) {
     supabaseAdmin
       .from("matchweeks")
       .select("*")
-      .eq("status", "UPCOMING")
+      .eq("status", "OPEN")
       .order("week_number")
       .limit(1)
       .single(),
@@ -99,6 +99,8 @@ export async function getDashboardData(memberId?: number) {
   let picksComplete = 0;
   let totalMatches = 0;
 
+  let completedMatches = 0;
+
   let bonusPicksComplete = 0;
 
   const totalBonusPicks = 5;
@@ -145,6 +147,11 @@ export async function getDashboardData(memberId?: number) {
       ) ?? [];
 
     totalMatches = fixtureIds.length;
+
+    completedMatches =
+      gameweekFixtures?.filter(
+        (fixture) => fixture.finished
+      ).length ?? 0;
 
     /*
      * -------------------------------------------------------
@@ -651,8 +658,8 @@ export async function getDashboardData(memberId?: number) {
 const fanboyClubNames = [
   "Arsenal",
   "Chelsea",
-  "Manchester United",
-  "Tottenham",
+  "Man Utd",
+  "Spurs",
 ];
 
 const {
@@ -842,10 +849,20 @@ const fanboyClubs = [
 
       deadline,
 
-      progress: 0,
+      progress:
+        totalMatches > 0
+          ? Math.round(
+            (completedMatches / totalMatches) * 100
+            )
+        : 0,
+
+      completedMatches,
+      totalMatches,
 
       countdown:
-        "Live Soon",
+        completedMatches === totalMatches
+          ? "Gameweek Complete"
+          : `${completedMatches} of ${totalMatches} matches complete`,
     },
 
     myWeek: {

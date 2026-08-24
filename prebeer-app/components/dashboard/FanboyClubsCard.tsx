@@ -22,10 +22,10 @@ const clubCrests: Record<string, string> = {
   Chelsea:
     "https://resources.premierleague.com/premierleague/badges/50/t8.png",
 
-  "Manchester United":
+  "Man Utd":
     "https://resources.premierleague.com/premierleague/badges/50/t1.png",
 
-  Tottenham:
+  Spurs:
     "https://resources.premierleague.com/premierleague/badges/50/t6.png",
 };
 

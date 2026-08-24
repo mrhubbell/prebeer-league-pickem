@@ -4,12 +4,22 @@ import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 import { useMember } from "@/context/MemberContext";
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import FixtureCard from "./FixtureCard";
 import SavePicksButton from "./SavePicksButton";
 import BonusPicksCard from "./BonusPicksCard";
 
 interface PicksBoardProps {
   weekNumber: number;
+  matchweekId: number;
+  matchweekStatus: string;
+
+  availableGameweeks: {
+    matchweek_id: number;
+    week_number: number;
+    status: string;
+  }[];
+
   fixtures: any[];
   featuredMatchFixtureId?: number | null;
   gameOfTheWeekFixtureId?: number | null;
@@ -17,10 +27,14 @@ interface PicksBoardProps {
 
 export default function PicksBoard({
   weekNumber,
+  matchweekId,
+  matchweekStatus,
+  availableGameweeks,
   fixtures,
   featuredMatchFixtureId,
   gameOfTheWeekFixtureId,
 }: PicksBoardProps) {
+  const router = useRouter();
   const [selections, setSelections] = useState<Record<number, string>>({});
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -30,9 +44,6 @@ export default function PicksBoard({
     useState<number | null>(null);
 
   const [goalPick2, setGoalPick2] =
-    useState<number | null>(null);
-
-  const [currentMatchweekId, setCurrentMatchweekId] =
     useState<number | null>(null);
 
   const [assistPick1, setAssistPick1] =
@@ -91,23 +102,6 @@ export default function PicksBoard({
   }, []);
 
   useEffect(() => {
-    async function loadCurrentMatchweek() {
-      try {
-        const response = await fetch("/api/current-matchweek");
-        const result = await response.json();
-
-        if (response.ok && result.success) {
-          setCurrentMatchweekId(result.matchweekId);
-        }
-      } catch (err) {
-        console.error("Unable to load current matchweek:", err);
-      }
-    }
-
-    loadCurrentMatchweek();
-  }, []);
-
-  useEffect(() => {
     async function loadClubs() {
       try {
         const response = await fetch("/api/clubs");
@@ -132,13 +126,13 @@ export default function PicksBoard({
         return;
       }
 
-      if (currentMatchweekId === null) {
+      if (!matchweekId === null) {
         return;
       }
 
       try {
         const response = await fetch(
-          `/api/goalscorers/member?memberId=${currentMember.memberId}&matchweekId=${currentMatchweekId}`
+          `/api/goalscorers/member?memberId=${currentMember.memberId}&matchweekId=${matchweekId}`
         );
 
         const result = await response.json();
@@ -164,7 +158,7 @@ export default function PicksBoard({
     }
 
     loadGoalScorerPicks();
-  }, [currentMember.memberId, currentMatchweekId]);
+  }, [currentMember.memberId, matchweekId]);
 
   useEffect(() => {
     async function loadAssistPicks() {
@@ -174,13 +168,13 @@ export default function PicksBoard({
         return;
       }
 
-      if (!currentMatchweekId) {
+      if (!matchweekId) {
         return;
       }
 
       try {
         const response = await fetch(
-          `/api/assists/member?memberId=${currentMember.memberId}&matchweekId=${currentMatchweekId}`
+          `/api/assists/member?memberId=${currentMember.memberId}&matchweekId=${matchweekId}`
         );
 
         const result = await response.json();
@@ -211,7 +205,7 @@ export default function PicksBoard({
     }
 
     loadAssistPicks();
-  }, [currentMember.memberId, currentMatchweekId]);
+  }, [currentMember.memberId, matchweekId]);
 
   useEffect(() => {
     async function loadCleanSheetPick() {
@@ -220,13 +214,13 @@ export default function PicksBoard({
         return;
       }
 
-      if (currentMatchweekId === null) {
+      if (!matchweekId === null) {
         return;
       }
 
       try {
         const response = await fetch(
-          `/api/cleansheets/member?memberId=${currentMember.memberId}&matchweekId=${currentMatchweekId}`
+          `/api/cleansheets/member?memberId=${currentMember.memberId}&matchweekId=${matchweekId}`
         );
 
         const result = await response.json();
@@ -245,14 +239,18 @@ export default function PicksBoard({
     }
 
     loadCleanSheetPick();
-  }, [currentMember.memberId, currentMatchweekId]);
+  }, [currentMember.memberId, matchweekId]);
 
   function handleSelection(
-    fixtureId: number,
-    result: string
-  ) {
-    setSelections((prev) => ({
-      ...prev,
+  fixtureId: number,
+  result: string
+) {
+  if (matchweekStatus === "LOCKED") {
+    return;
+  }
+
+  setSelections((prev) => ({
+    ...prev,
       [fixtureId]: result,
     }));
   }
@@ -343,7 +341,7 @@ if (!session?.access_token) {
       }
 
       if (
-        currentMatchweekId &&
+        matchweekId &&
         goalPick1 &&
         goalPick2
       ) {
@@ -356,7 +354,7 @@ if (!session?.access_token) {
             },
             body: JSON.stringify({
               memberId: Number(memberId),
-              matchweekId: currentMatchweekId,
+              matchweekId: matchweekId,
               picks: [
                 {
                   player_id: goalPick1,
@@ -386,7 +384,7 @@ if (!session?.access_token) {
       }
 
       if (
-        currentMatchweekId &&
+        matchweekId &&
         assistPick1 &&
         assistPick2
       ) {
@@ -399,7 +397,7 @@ if (!session?.access_token) {
             },
             body: JSON.stringify({
               memberId: Number(memberId),
-              matchweekId: currentMatchweekId,
+              matchweekId: matchweekId,
               picks: [
                 {
                   player_id: assistPick1,
@@ -429,7 +427,7 @@ if (!session?.access_token) {
       }
 
       if (
-        currentMatchweekId &&
+        matchweekId &&
         cleanSheetClubId
       ) {
         const cleanSheetResponse = await fetch(
@@ -441,7 +439,7 @@ if (!session?.access_token) {
             },
             body: JSON.stringify({
               memberId: Number(memberId),
-              matchweekId: currentMatchweekId,
+              matchweekId: matchweekId,
               pick: {
                 club_id: cleanSheetClubId,
               },
@@ -517,6 +515,48 @@ if (!session?.access_token) {
   </div>
 </div>
 
+<div className="mb-6 rounded-2xl border border-slate-800 bg-slate-900 p-4">
+  <div className="flex items-center justify-between gap-4">
+    <div>
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        Gameweek
+      </p>
+
+      <p className="mt-1 text-lg font-bold text-white">
+        Gameweek {weekNumber}
+      </p>
+    </div>
+
+    <select
+      value={matchweekId}
+      onChange={(event) => {
+        router.push(
+          `/picks?gameweek=${event.target.value}`
+        );
+      }}
+      className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-2 text-sm font-semibold text-white outline-none focus:border-amber-400"
+    >
+      {availableGameweeks.map((gameweek) => (
+        <option
+          key={gameweek.matchweek_id}
+          value={gameweek.matchweek_id}
+        >
+          Gameweek {gameweek.week_number}
+          {gameweek.status === "LOCKED"
+            ? " — Complete"
+            : " — Current"}
+        </option>
+      ))}
+    </select>
+  </div>
+</div>
+
+{matchweekStatus === "LOCKED" && (
+  <div className="mb-6 rounded-xl border border-amber-900/50 bg-amber-950/30 px-4 py-3 text-sm font-semibold text-amber-300">
+    🔒 Gameweek {weekNumber} is complete. Your picks are locked.
+  </div>
+)}
+
     {/* Fixtures */}
     {fixtures.map((fixture) => (
       <FixtureCard
@@ -567,13 +607,14 @@ if (!session?.access_token) {
     )}
 
     {/* Save Button */}
-    <SavePicksButton
-      disabled={
-        completedPicks !== totalFixtures ||
-        saving
-      }
-      onClick={handleSave}
-    />
+   <SavePicksButton
+  disabled={
+    matchweekStatus === "LOCKED" ||
+    completedPicks !== totalFixtures ||
+    saving
+  }
+  onClick={handleSave}
+/>
 
   </div>
 );

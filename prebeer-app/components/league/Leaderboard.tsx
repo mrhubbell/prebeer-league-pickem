@@ -17,21 +17,26 @@ interface Standing {
 
 export default function Leaderboard() {
   const [standings, setStandings] = useState<Standing[]>([]);
+  const [loading, setLoading] = useState(true);
   const [expandedMember, setExpandedMember] =
     useState<number | null>(null);
 
   useEffect(() => {
-    async function loadStandings() {
+  async function loadStandings() {
+    try {
       const response = await fetch("/api/standings");
       const result = await response.json();
 
       if (response.ok && result.success) {
         setStandings(result.standings);
       }
+    } finally {
+      setLoading(false);
     }
+  }
 
-    loadStandings();
-  }, []);
+  loadStandings();
+}, []);
 
   function getRankDisplay(rank: number) {
     switch (rank) {
@@ -64,14 +69,20 @@ export default function Leaderboard() {
         Pre-Beer League Standings
       </h2>
 
-      {standings.length === 0 ? (
-        <div className="mt-6 rounded-2xl border border-slate-800 bg-slate-950 px-6 py-8 text-center">
-          <p className="text-base font-semibold text-slate-300">
-            League standings will appear following the results of
-            Gameweek 1. Sip your beer and calm down! 🍻
-          </p>
-        </div>
-      ) : (
+      {loading ? (
+  <div className="mt-6 rounded-2xl border border-slate-800 bg-slate-950 px-6 py-8 text-center">
+    <p className="text-base font-semibold text-slate-400">
+      Loading standings... 🍺
+    </p>
+  </div>
+) : standings.length === 0 ? (
+  <div className="mt-6 rounded-2xl border border-slate-800 bg-slate-950 px-6 py-8 text-center">
+    <p className="text-base font-semibold text-slate-300">
+      League standings will appear following the results of
+      Gameweek 1. Sip your beer and calm down! 🍻
+    </p>
+  </div>
+) : (
         <div className="mt-6 space-y-3">
           {standings.map((member, index) => (
             <div

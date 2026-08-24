@@ -52,29 +52,57 @@ export default function GameweekHero({ gameweek }: GameweekHeroProps) {
 
         <div className="mt-8">
 
-          <div className="flex justify-between text-sm text-slate-400">
-            <span>Deadline Countdown</span>
-            <span>{gameweek.progress}%</span>
-          </div>
+  <div className="flex justify-between text-sm text-slate-400">
+    <span>Gameweek Progress</span>
+    <span>
+      {gameweek.completedMatches} of{" "}
+      {gameweek.totalMatches}
+    </span>
+  </div>
 
-          <div className="mt-2 h-3 rounded-full bg-slate-700">
-            <div
-              className="h-3 rounded-full bg-amber-400 transition-all duration-500"
-              style={{ width: `${gameweek.progress}%` }}
-            />
-          </div>
+  <div className="mt-2 h-3 rounded-full bg-slate-700">
+    <div
+      className="h-3 rounded-full bg-amber-400 transition-all duration-500"
+      style={{
+        width: `${gameweek.progress}%`,
+      }}
+    />
+  </div>
 
-          <div className="mt-4 text-center">
-            <p className="text-4xl font-black tracking-tight">
-              {gameweek.countdown.toUpperCase()}
-            </p>
+  <div className="mt-5 text-center">
 
-            <p className="text-slate-400">
-              until picks lock
-            </p>
-          </div>
+    {gameweek.completedMatches ===
+    gameweek.totalMatches ? (
+      <>
+        <p className="text-3xl font-black tracking-tight">
+          GAMEWEEK COMPLETE
+        </p>
 
-        </div>
+        <p className="text-slate-400">
+          All matches have been played
+        </p>
+      </>
+    ) : (
+      <>
+        <p className="text-3xl font-black tracking-tight">
+          {gameweek.totalMatches -
+            gameweek.completedMatches}{" "}
+          {gameweek.totalMatches -
+            gameweek.completedMatches === 1
+            ? "MATCH"
+            : "MATCHES"}{" "}
+          REMAINING
+        </p>
+
+        <p className="text-slate-400">
+          Gameweek 1 is underway
+        </p>
+      </>
+    )}
+
+  </div>
+
+</div>
 
       </div>
 

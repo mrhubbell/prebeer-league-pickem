@@ -5,6 +5,8 @@ export interface Gameweek {
   deadline: string;
   countdown: string;
   progress: number;
+  completedMatches: number;
+  totalMatches: number;
 }
 
 export interface MyWeek {

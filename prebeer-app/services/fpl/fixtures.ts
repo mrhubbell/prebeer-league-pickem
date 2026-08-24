@@ -23,10 +23,14 @@ export async function syncFixtures() {
     home_score: fixture.team_h_score,
     away_score: fixture.team_a_score,
     started: fixture.started,
-    finished: fixture.finished,
+    finished:
+      fixture.finished ||
+      fixture.finished_provisional ||
+      false,
     finished_provisional:
       fixture.finished_provisional ?? false,
-    provisional: fixture.provisional ?? false,
+    provisional:
+      fixture.provisional ?? false,
   }));
 
   const { data: result, error } = await supabaseAdmin

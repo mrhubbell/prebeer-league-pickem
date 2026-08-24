@@ -18,6 +18,8 @@ interface Dashboard {
     deadline: string;
     progress: number;
     countdown: string;
+    completedMatches: number;
+    totalMatches: number;
   };
 
   myWeek: {
