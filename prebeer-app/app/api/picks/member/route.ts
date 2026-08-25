@@ -1,11 +1,17 @@
 import { NextResponse } from "next/server";
-import { getMemberPicks } from "@/services/picksService";
+
+import { getMemberPicks, getGameweekFixtures } from "@/services/picksService";
+import { getGoalScorerPicks } from "@/services/goalScorerService";
+import { getAssistPicks } from "@/services/assistService";
+import { getCleanSheetPick } from "@/services/cleanSheetService";
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
 
-    const memberId = Number(searchParams.get("memberId"));
+    const memberId = Number(
+      searchParams.get("memberId")
+    );
 
     const matchweekId = Number(
       searchParams.get("matchweekId")
@@ -15,7 +21,7 @@ export async function GET(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          message: "No member selected.",
+          message: "Missing memberId or matchweekId.",
         },
         {
           status: 400,
@@ -23,16 +29,29 @@ export async function GET(request: Request) {
       );
     }
 
-    const selections =
-      await getMemberPicks(
-        memberId,
-        matchweekId
-      );
+    const [
+      gameweek,
+      selections,
+      goalScorers,
+      assists,
+      cleanSheet,
+    ] = await Promise.all([
+      getGameweekFixtures(matchweekId),
+      getMemberPicks(memberId, matchweekId),
+      getGoalScorerPicks(memberId, matchweekId),
+      getAssistPicks(memberId, matchweekId),
+      getCleanSheetPick(memberId, matchweekId),
+    ]);
 
     return NextResponse.json({
       success: true,
+      gameweek,
       selections,
+      goalScorers,
+      assists,
+      cleanSheet,
     });
+
   } catch (error) {
     console.error(error);
 
