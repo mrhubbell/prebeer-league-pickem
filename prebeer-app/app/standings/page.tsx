@@ -8,7 +8,7 @@ export default function StandingsPage() {
     <PageContainer>
 
       <div className="mb-8">
-  <LeagueHeader />
+  <LeagueHeader showLogo={false} />
 </div>
 
       <div className="space-y-6">
