@@ -51,6 +51,12 @@ interface GameweekPickData {
   cleanSheet: {
     club_id: number;
   } | null;
+  results: {
+    matchResults: Record<number, string>;
+    goalResults: Record<number, number>;
+    assistResults: Record<number, number>;
+    cleanSheetResults: number[];
+  };
 }
 
 export default function Leaderboard() {
@@ -276,6 +282,29 @@ export default function Leaderboard() {
         return prediction;
     }
   }
+
+function isCorrectPrediction(
+  prediction: string | undefined,
+  actual: string | undefined
+) {
+  return !!prediction &&
+    !!actual &&
+    prediction === actual;
+}
+
+function getPickResultClass(
+  correct: boolean
+) {
+  return correct
+    ? "border border-emerald-500/30 bg-emerald-950/30 text-emerald-400"
+    : "border border-red-500/30 bg-red-950/30 text-red-400";
+}
+
+function getPickResultIcon(
+  correct: boolean
+) {
+  return correct ? "✓" : "✗";
+}
 
   function getFixtureLabel(
     fixture: any
@@ -514,111 +543,211 @@ export default function Leaderboard() {
                           )}
 
                         {memberPicks && (
-                          <div className="mt-4 space-y-5">
-                            <div>
-                              <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">
-                                Match Predictions
-                              </p>
+  <div className="mt-4 space-y-5">
 
-                              <div className="space-y-1.5">
-                                {memberPicks.gameweek.fixtures.map(
-                                  (fixture) => {
-                                    const prediction =
-                                      memberPicks
-                                        .selections[
-                                        fixture.fixture_id
-                                      ];
+    {/* Match Predictions */}
+    <div>
+      <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">
+        Match Predictions
+      </p>
 
-                                    return (
-                                      <div
-                                        key={
-                                          fixture.fixture_id
-                                        }
-                                        className="flex items-center justify-between gap-3 rounded-lg bg-slate-950 px-3 py-2"
-                                      >
-                                        <span className="min-w-0 truncate text-xs text-slate-300">
-                                          {getFixtureLabel(
-                                            fixture
-                                          )}
-                                        </span>
+      <div className="space-y-1.5">
+        {memberPicks.gameweek.fixtures.map(
+          (fixture) => {
+            const prediction =
+              memberPicks.selections[
+                fixture.fixture_id
+              ];
 
-                                        <span className="flex-shrink-0 text-xs font-bold text-white">
-                                          {prediction
-                                            ? getPredictionLabel(
-                                                prediction
-                                              )
-                                            : "—"}
-                                        </span>
-                                      </div>
-                                    );
-                                  }
-                                )}
-                              </div>
-                            </div>
+            const actualResult =
+              memberPicks.results.matchResults[
+                fixture.fixture_id
+              ];
 
-                            <div>
-                              <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">
-                                🥅 Goalscorers
-                              </p>
+            const correct =
+              isCorrectPrediction(
+                prediction,
+                actualResult
+              );
 
-                              <div className="flex flex-wrap gap-2">
-                                {memberPicks.goalScorers.map(
-                                  (pick) => (
-                                    <span
-                                      key={
-                                        pick.pick_number
-                                      }
-                                      className="rounded-lg bg-slate-950 px-3 py-2 text-xs font-semibold text-white"
-                                    >
-                                      {getPlayerName(
-                                        pick.player_id
-                                      )}
-                                    </span>
-                                  )
-                                )}
-                              </div>
-                            </div>
+            return (
+              <div
+                key={fixture.fixture_id}
+                className={`flex items-center justify-between gap-3 rounded-lg px-3 py-2 ${getPickResultClass(
+                  correct
+                )}`}
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-xs font-semibold">
+                    {getFixtureLabel(
+                      fixture
+                    )}
+                  </p>
 
-                            <div>
-                              <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">
-                                🎯 Assists
-                              </p>
+                  {fixture.home_score !==
+                    null &&
+                    fixture.away_score !==
+                      null && (
+                      <p className="mt-0.5 text-[10px] text-slate-500">
+                        Final:{" "}
+                        {fixture.home_score}–
+                        {fixture.away_score}
+                      </p>
+                    )}
+                </div>
 
-                              <div className="flex flex-wrap gap-2">
-                                {memberPicks.assists.map(
-                                  (pick) => (
-                                    <span
-                                      key={
-                                        pick.pick_number
-                                      }
-                                      className="rounded-lg bg-slate-950 px-3 py-2 text-xs font-semibold text-white"
-                                    >
-                                      {getPlayerName(
-                                        pick.player_id
-                                      )}
-                                    </span>
-                                  )
-                                )}
-                              </div>
-                            </div>
+                <span className="flex-shrink-0 text-xs font-bold">
+                  {prediction
+                    ? getPredictionLabel(
+                        prediction
+                      )
+                    : "—"}{" "}
+                  {prediction &&
+                    actualResult &&
+                    getPickResultIcon(
+                      correct
+                    )}
+                </span>
+              </div>
+            );
+          }
+        )}
+      </div>
+    </div>
 
-                            <div>
-                              <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">
-                                🧤 Clean Sheet
-                              </p>
+    {/* Goalscorers */}
+    <div>
+      <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">
+        🥅 Goalscorers
+      </p>
 
-                              <span className="inline-block rounded-lg bg-slate-950 px-3 py-2 text-xs font-semibold text-white">
-                                {memberPicks.cleanSheet
-                                  ? getClubName(
-                                      memberPicks
-                                        .cleanSheet
-                                        .club_id
-                                    )
-                                  : "—"}
-                              </span>
-                            </div>
-                          </div>
-                        )}
+      <div className="flex flex-wrap gap-2">
+        {memberPicks.goalScorers.map(
+          (pick) => {
+            const goals =
+              memberPicks.results
+                .goalResults[
+                pick.player_id
+              ] ?? 0;
+
+            const correct =
+              goals > 0;
+
+            return (
+              <span
+                key={pick.pick_number}
+                className={`rounded-lg px-3 py-2 text-xs font-semibold ${getPickResultClass(
+                  correct
+                )}`}
+              >
+                {getPlayerName(
+                  pick.player_id
+                )}{" "}
+                <span className="font-normal">
+                  — {goals}{" "}
+                  {goals === 1
+                    ? "goal"
+                    : "goals"}
+                </span>{" "}
+                {getPickResultIcon(
+                  correct
+                )}
+              </span>
+            );
+          }
+        )}
+      </div>
+    </div>
+
+    {/* Assists */}
+    <div>
+      <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">
+        🎯 Assists
+      </p>
+
+      <div className="flex flex-wrap gap-2">
+        {memberPicks.assists.map(
+          (pick) => {
+            const assists =
+              memberPicks.results
+                .assistResults[
+                pick.player_id
+              ] ?? 0;
+
+            const correct =
+              assists > 0;
+
+            return (
+              <span
+                key={pick.pick_number}
+                className={`rounded-lg px-3 py-2 text-xs font-semibold ${getPickResultClass(
+                  correct
+                )}`}
+              >
+                {getPlayerName(
+                  pick.player_id
+                )}{" "}
+                <span className="font-normal">
+                  — {assists}{" "}
+                  {assists === 1
+                    ? "assist"
+                    : "assists"}
+                </span>{" "}
+                {getPickResultIcon(
+                  correct
+                )}
+              </span>
+            );
+          }
+        )}
+      </div>
+    </div>
+
+    {/* Clean Sheet */}
+    <div>
+      <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">
+        🧤 Clean Sheet
+      </p>
+
+      {memberPicks.cleanSheet ? (
+        (() => {
+          const clubId =
+            memberPicks.cleanSheet
+              .club_id;
+
+          const correct =
+            memberPicks.results
+              .cleanSheetResults
+              .includes(clubId);
+
+          return (
+            <span
+              className={`inline-block rounded-lg px-3 py-2 text-xs font-semibold ${getPickResultClass(
+                correct
+              )}`}
+            >
+              {getClubName(clubId)}{" "}
+              {correct ? (
+                <>
+                  — Clean Sheet ✓
+                </>
+              ) : (
+                <>
+                  — No Clean Sheet ✗
+                </>
+              )}
+            </span>
+          );
+        })()
+      ) : (
+        <span className="inline-block rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-xs font-semibold text-slate-500">
+          —
+        </span>
+      )}
+    </div>
+
+  </div>
+)}
                       </div>
                     )}
                   </div>
