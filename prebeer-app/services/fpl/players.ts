@@ -26,7 +26,7 @@ export async function syncPlayers() {
     last_name: player.second_name,
     web_name: player.web_name,
     position: mapPosition(player.element_type),
-    active: player.status === "a",
+    active: player.can_select === true,
   }));
 
   const { data: result, error } = await supabaseAdmin
