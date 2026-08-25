@@ -31,6 +31,24 @@ export default function FixtureCard({
   const isGameOfTheWeek =
     fixture.fixture_id === gameOfTheWeekFixtureId;
 
+  const isFinished =
+  fixture.finished === true &&
+  fixture.home_score !== null &&
+  fixture.away_score !== null;
+
+  const actualResult =
+    isFinished
+      ? fixture.home_score > fixture.away_score
+        ? "HOME"
+        : fixture.away_score > fixture.home_score
+        ? "AWAY"
+        : "DRAW"
+      : null;
+
+  const predictionCorrect =
+    isFinished &&
+    selection === actualResult;
+
   const borderClass =
     isGameOfTheWeek
     ? "border-blue-500"
@@ -40,12 +58,25 @@ export default function FixtureCard({
     ? "border-amber-400"
     : "border-slate-800";
 
-  const buttonStyle = (value: string) =>
-  locked
+  const buttonStyle = (value: string) => {
+  if (isFinished) {
+    if (selection === value) {
+      if (predictionCorrect) {
+        return "border-2 border-green-400 bg-green-400/10 text-green-400";
+      }
+
+      return "border-2 border-red-400 bg-red-400/10 text-red-400";
+    }
+
+    return "border-slate-700 bg-slate-800 text-slate-500";
+  }
+
+  return locked
     ? "border-slate-700 bg-slate-800 text-slate-500 cursor-not-allowed"
     : selection === value
     ? "bg-amber-400 text-slate-900 border-amber-400"
     : "border-slate-700 text-white hover:border-amber-400 hover:bg-slate-800";
+};
 
   return (
     <div className={`rounded-3xl border bg-slate-900 p-5 ${borderClass}`}>
@@ -81,7 +112,21 @@ export default function FixtureCard({
 
         <div className="text-center">
 
-          <p className="text-sm text-slate-400">vs</p>
+          {isFinished ? (
+  <>
+    <p className="text-2xl font-black text-white">
+      {fixture.home_score} - {fixture.away_score}
+    </p>
+
+    <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
+      Final
+    </p>
+  </>
+) : (
+  <p className="text-sm text-slate-400">
+    vs
+  </p>
+)}
 
           <p className="mt-2 text-xs text-slate-500">
             {new Intl.DateTimeFormat("en-US", {

@@ -28,6 +28,9 @@ export async function getCurrentGameweekFixtures() {
         kickoff_time,
         home_club_id,
         away_club_id,
+        home_score,
+        away_score,
+        finished,
         clubs!fixtures_home_club_id_fkey (
           club_name,
           badge_code
@@ -82,6 +85,9 @@ export async function getGameweekFixtures(
         kickoff_time,
         home_club_id,
         away_club_id,
+        home_score,
+        away_score,
+        finished,
         clubs!fixtures_home_club_id_fkey (
           club_name,
           badge_code

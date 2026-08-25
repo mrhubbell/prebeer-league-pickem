@@ -1,8 +1,12 @@
 "use client";
 
+import PlayerSearchSelect from "./PlayerSearchSelect";
+
 interface Player {
   player_id: number;
   web_name: string;
+  first_name: string;
+  last_name: string;
   club_name: string;
   position: string;
 }
@@ -86,65 +90,29 @@ export default function BonusPicksCard({
 
         <div className="space-y-4">
 
-          <select
-            value={goalPick1 ?? ""}
-            disabled={locked}
-            onChange={(e) =>
-              onGoalPickChange(
-                1,
-                Number(e.target.value)
-              )
+          <PlayerSearchSelect
+            players={players}
+            value={goalPick1}
+            onChange={(playerId) =>
+              onGoalPickChange(1, playerId)
             }
-            className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-white"
-          >
-            <option value="">
-              Goalscorer #1
-            </option>
-
-            {players
-  .filter((player) => player.position !== "GK")
-  .map((player) => (
-              <option
-                key={player.player_id}
-                value={player.player_id}
-                disabled={
-                  player.player_id === goalPick2
-                }
-              >
-                {player.club_name} • {player.web_name} • {player.position}
-              </option>
-            ))}
-          </select>
-
-          <select
-            value={goalPick2 ?? ""}
+            placeholder="Goalscorer #1"
             disabled={locked}
-            onChange={(e) =>
-              onGoalPickChange(
-                2,
-                Number(e.target.value)
-              )
-            }
-            className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-white"
-          >
-            <option value="">
-              Goalscorer #2
-            </option>
+            excludePlayerId={goalPick2}
+            excludeGoalkeepers
+          />
 
-            {players
-  .filter((player) => player.position !== "GK")
-  .map((player) => (
-              <option
-                key={player.player_id}
-                value={player.player_id}
-                disabled={
-                  player.player_id === goalPick1
-                }
-              >
-                {player.club_name} • {player.web_name} • {player.position}
-              </option>
-            ))}
-          </select>
+          <PlayerSearchSelect
+            players={players}
+            value={goalPick2}
+            onChange={(playerId) =>
+              onGoalPickChange(2, playerId)
+            }
+            placeholder="Goalscorer #2"
+            disabled={locked}
+            excludePlayerId={goalPick1}
+            excludeGoalkeepers
+          />
 
         </div>
 
@@ -160,57 +128,27 @@ export default function BonusPicksCard({
 
   <div className="space-y-4">
 
-    <select
-  value={assistPick1 ?? ""}
-  disabled={locked}
-  onChange={(e) =>
-    onAssistPickChange(
-      1,
-      Number(e.target.value)
-    )
-  }
-  className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-white"
->
-  <option value="">
-    Assister #1
-  </option>
+    <PlayerSearchSelect
+      players={players}
+      value={assistPick1}
+      onChange={(playerId) =>
+        onAssistPickChange(1, playerId)
+      }
+      placeholder="Assister #1"
+      disabled={locked}
+      excludePlayerId={assistPick2}
+    />
 
-  {players.map((player) => (
-    <option
-      key={player.player_id}
-      value={player.player_id}
-      disabled={player.player_id === assistPick2}
-    >
-      {player.club_name} • {player.web_name} • {player.position}
-    </option>
-  ))}
-</select>
-
-<select
-  value={assistPick2 ?? ""}
-  disabled={locked}
-  onChange={(e) =>
-    onAssistPickChange(
-      2,
-      Number(e.target.value)
-    )
-  }
-  className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-white"
->
-  <option value="">
-    Assister #2
-  </option>
-
-  {players.map((player) => (
-    <option
-      key={player.player_id}
-      value={player.player_id}
-      disabled={player.player_id === assistPick1}
-    >
-      {player.club_name} • {player.web_name} • {player.position}
-    </option>
-  ))}
-</select>
+    <PlayerSearchSelect
+      players={players}
+      value={assistPick2}
+      onChange={(playerId) =>
+        onAssistPickChange(2, playerId)
+      }
+      placeholder="Assister #2"
+      disabled={locked}
+      excludePlayerId={assistPick1}
+    />
 
 </div>
 
