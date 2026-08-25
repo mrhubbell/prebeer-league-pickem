@@ -14,51 +14,117 @@ export async function getDashboardData(memberId?: number) {
    * These queries are independent, so run them all at once.
    */
 
-  const [
-    leagueLeaders,
-    seasonResult,
-    gameweekResult,
-    clubsResult,
-    playersResult,
-    fixturesCountResult,
-  ] = await Promise.all([
-    getLeagueLeaders(),
+const initialStart = Date.now();
 
-    supabaseAdmin
-      .from("seasons")
-      .select("*")
-      .eq("is_current", true)
-      .single(),
+const leagueLeadersStart = Date.now();
 
-    supabaseAdmin
-      .from("matchweeks")
-      .select("*")
-      .eq("status", "OPEN")
-      .order("week_number")
-      .limit(1)
-      .single(),
+const leagueLeadersPromise =
+  getLeagueLeaders().then((result) => {
+    console.log(
+      `getLeagueLeaders: ${Date.now() - leagueLeadersStart}ms`
+    );
+    return result;
+  });
 
-    supabaseAdmin
-      .from("clubs")
-      .select("*", {
-        count: "exact",
-        head: true,
-      }),
+const seasonStart = Date.now();
 
-    supabaseAdmin
-      .from("players")
-      .select("*", {
-        count: "exact",
-        head: true,
-      }),
+const seasonPromise =
+  supabaseAdmin
+    .from("seasons")
+    .select("*")
+    .eq("is_current", true)
+    .single()
+    .then((result) => {
+      console.log(
+        `season query: ${Date.now() - seasonStart}ms`
+      );
+      return result;
+    });
 
-    supabaseAdmin
-      .from("fixtures")
-      .select("*", {
-        count: "exact",
-        head: true,
-      }),
-  ]);
+const gameweekStart = Date.now();
+
+const gameweekPromise =
+  supabaseAdmin
+    .from("matchweeks")
+    .select("*")
+    .eq("status", "OPEN")
+    .order("week_number")
+    .limit(1)
+    .single()
+    .then((result) => {
+      console.log(
+        `gameweek query: ${Date.now() - gameweekStart}ms`
+      );
+      return result;
+    });
+
+const clubsStart = Date.now();
+
+const clubsPromise =
+  supabaseAdmin
+    .from("clubs")
+    .select("*", {
+      count: "exact",
+      head: true,
+    })
+    .then((result) => {
+      console.log(
+        `clubs query: ${Date.now() - clubsStart}ms`
+      );
+      return result;
+    });
+
+const playersStart = Date.now();
+
+const playersPromise =
+  supabaseAdmin
+    .from("players")
+    .select("*", {
+      count: "exact",
+      head: true,
+    })
+    .then((result) => {
+      console.log(
+        `players query: ${Date.now() - playersStart}ms`
+      );
+      return result;
+    });
+
+const fixturesCountStart = Date.now();
+
+const fixturesCountPromise =
+  supabaseAdmin
+    .from("fixtures")
+    .select("*", {
+      count: "exact",
+      head: true,
+    })
+    .then((result) => {
+      console.log(
+        `fixtures count query: ${Date.now() - fixturesCountStart}ms`
+      );
+      return result;
+    });
+
+const [
+  leagueLeaders,
+  seasonResult,
+  gameweekResult,
+  clubsResult,
+  playersResult,
+  fixturesCountResult,
+] = await Promise.all([
+  leagueLeadersPromise,
+  seasonPromise,
+  gameweekPromise,
+  clubsPromise,
+  playersPromise,
+  fixturesCountPromise,
+]);
+
+console.log(
+  `Dashboard initial queries: ${Date.now() - initialStart}ms`
+);
 
   const season = seasonResult.data;
   const gameweek = gameweekResult.data;

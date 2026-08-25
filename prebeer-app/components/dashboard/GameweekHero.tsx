@@ -95,8 +95,12 @@ export default function GameweekHero({ gameweek }: GameweekHeroProps) {
         </p>
 
         <p className="text-slate-400">
-          Gameweek 1 is underway
-        </p>
+  {gameweek.progress === 0
+    ? "Picks are open"
+    : gameweek.progress === 100
+      ? `Gameweek ${gameweek.number} is complete`
+      : `Gameweek ${gameweek.number} is underway`}
+</p>
       </>
     )}
 

@@ -208,18 +208,24 @@ export async function saveMemberPicks(
 }
 
 export async function getMemberPicks(
-  memberId: number
+  memberId: number,
+  matchweekId?: number
 ) {
-  const { data, error } =
-    await supabaseAdmin
-      .from("match_picks")
-      .select(
-        "fixture_id, predicted_result"
+  let query = supabaseAdmin
+    .from("match_picks")
+    .select(`
+      fixture_id,
+      predicted_result,
+      fixtures!match_picks_fixture_id_fkey (
+        matchweek_id
       )
-      .eq(
-        "member_id",
-        memberId
-      );
+    `)
+    .eq(
+      "member_id",
+      memberId
+    );
+
+  const { data, error } = await query;
 
   if (error) throw error;
 
@@ -229,6 +235,16 @@ export async function getMemberPicks(
   > = {};
 
   data.forEach((pick) => {
+    const fixture =
+      pick.fixtures as any;
+
+    if (
+      matchweekId &&
+      fixture?.matchweek_id !== matchweekId
+    ) {
+      return;
+    }
+
     selections[
       pick.fixture_id
     ] =

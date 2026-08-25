@@ -55,9 +55,20 @@ export async function GET(request: Request) {
       );
     }
 
-    const dashboard = await getDashboardData(
-      member.member_id
-    );
+    const dashboardStart = Date.now();
+
+const dashboard = await getDashboardData(
+  member.member_id
+);
+
+console.log(
+  `Dashboard data loaded in ${Date.now() - dashboardStart}ms`
+);
+
+return NextResponse.json({
+  success: true,
+  dashboard,
+});
 
     return NextResponse.json({
       success: true,

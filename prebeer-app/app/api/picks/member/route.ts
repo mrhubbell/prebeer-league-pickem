@@ -7,7 +7,11 @@ export async function GET(request: Request) {
 
     const memberId = Number(searchParams.get("memberId"));
 
-    if (!memberId) {
+    const matchweekId = Number(
+      searchParams.get("matchweekId")
+    );
+
+    if (!memberId || !matchweekId) {
       return NextResponse.json(
         {
           success: false,
@@ -19,7 +23,11 @@ export async function GET(request: Request) {
       );
     }
 
-    const selections = await getMemberPicks(memberId);
+    const selections =
+      await getMemberPicks(
+        memberId,
+        matchweekId
+      );
 
     return NextResponse.json({
       success: true,

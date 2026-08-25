@@ -68,7 +68,7 @@ export default function PicksBoard({
 
       try {
         const response = await fetch(
-          `/api/picks/member?memberId=${currentMember.memberId}`
+          `/api/picks/member?memberId=${currentMember.memberId}&matchweekId=${matchweekId}`
         );
 
         const result = await response.json();
@@ -82,7 +82,7 @@ export default function PicksBoard({
     }
 
     loadPicks();
-  }, [currentMember.memberId]);
+  }, [currentMember.memberId, matchweekId]);
 
   useEffect(() => {
     async function loadPlayers() {
