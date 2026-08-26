@@ -1,0 +1,17 @@
+name: Pre-Beer FPL Sync
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Sync current Gameweek
+        run: |
+          curl --fail-with-body \
+            -H "Authorization: Bearer ${{ secrets.FPL_SYNC_SECRET }}" \
+            "https://prebeer-league-pickem-five.vercel.app/api/fpl/sync/gameweek"

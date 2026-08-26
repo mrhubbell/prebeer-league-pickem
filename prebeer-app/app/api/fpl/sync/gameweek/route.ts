@@ -3,12 +3,35 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { processGameweek } from "@/services/fpl/processGameweek";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const syncSecret =
+      process.env.FPL_SYNC_SECRET;
+
+    const authorization =
+      request.headers.get("authorization");
+
+    if (
+      !syncSecret ||
+      authorization !== `Bearer ${syncSecret}`
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Unauthorized.",
+        },
+        {
+          status: 401,
+        }
+      );
+    }
+
     const { data: matchweek, error } =
       await supabaseAdmin
         .from("matchweeks")
-        .select("matchweek_id, week_number, status")
+        .select(
+          "matchweek_id, week_number, status"
+        )
         .in("status", ["OPEN", "LOCKED"])
         .order("week_number", {
           ascending: false,
@@ -38,7 +61,7 @@ export async function GET() {
     );
 
     return NextResponse.json(result);
-    
+
   } catch (err) {
     console.error(
       "GAMEWEEK SYNC ERROR:",
