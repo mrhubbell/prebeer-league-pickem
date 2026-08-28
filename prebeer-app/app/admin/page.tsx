@@ -7,6 +7,8 @@ import {
   Star,
   RefreshCw,
   Database,
+  CheckCircle2,
+  AlertCircle,
 } from "lucide-react";
 
 import PageContainer from "@/components/layout/PageContainer";
@@ -20,6 +22,12 @@ export default function AdminPage() {
   const [syncMessage, setSyncMessage] = useState("");
   const [gameweekSyncing, setGameweekSyncing] = useState(false);
   const [gameweekMessage, setGameweekMessage] = useState("");
+
+  const [pickStatus, setPickStatus] =
+    useState<any>(null);
+
+  const [pickStatusLoading, setPickStatusLoading] =
+    useState(true);
 
   const handleSync = async () => {
   setSyncing(true);
@@ -48,6 +56,7 @@ export default function AdminPage() {
     setSyncing(false);
   }
 };
+
 const handleGameweekSync = async () => {
   setGameweekSyncing(true);
   setGameweekMessage("");
@@ -88,6 +97,32 @@ const handleGameweekSync = async () => {
   }
 };
 
+  const loadPickStatus = async () => {
+    try {
+      const response = await fetch(
+        "/api/admin/pick-status"
+      );
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(
+          result.message ||
+            "Unable to load pick status."
+        );
+      }
+
+      setPickStatus(result);
+    } catch (err) {
+      console.error(
+        "PICK STATUS ERROR:",
+        err
+      );
+    } finally {
+      setPickStatusLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!loading) {
       if (
@@ -102,6 +137,20 @@ const handleGameweekSync = async () => {
     currentMember.memberId,
     currentMember.role,
     router,
+  ]);
+
+    useEffect(() => {
+    if (
+      !loading &&
+      currentMember.memberId &&
+      currentMember.role === "COMMISSIONER"
+    ) {
+      loadPickStatus();
+    }
+  }, [
+    loading,
+    currentMember.memberId,
+    currentMember.role,
   ]);
 
   if (
@@ -129,6 +178,113 @@ const handleGameweekSync = async () => {
           <p className="mt-2 text-slate-400">
             Manage your league from one place.
           </p>
+        </div>
+
+        {/* Weekly Pick Status */}
+        <div className="rounded-3xl border border-slate-800 bg-slate-900 p-6">
+
+          <div className="flex items-center justify-between">
+
+            <div>
+              <p className="text-xs uppercase tracking-[0.2em] text-amber-400">
+                WEEKLY PICKS
+              </p>
+
+              <h2 className="mt-2 text-xl font-bold text-white">
+                {pickStatus?.gameweek
+                  ? `Gameweek ${pickStatus.gameweek.weekNumber}`
+                  : "Pick Status"}
+              </h2>
+            </div>
+
+            {!pickStatusLoading &&
+              pickStatus?.members && (
+                <div className="text-right">
+                  <div className="text-2xl font-black text-white">
+                    {
+                      pickStatus.members.filter(
+                        (member: any) =>
+                          member.submitted
+                      ).length
+                    }
+                    /
+                    {pickStatus.members.length}
+                  </div>
+
+                  <div className="text-xs text-slate-400">
+                    Submitted
+                  </div>
+                </div>
+              )}
+
+          </div>
+
+          {pickStatusLoading ? (
+            <div className="mt-5 text-sm text-slate-400">
+              Checking pick submissions...
+            </div>
+          ) : !pickStatus?.gameweek ? (
+            <div className="mt-5 text-sm text-slate-400">
+              No open Gameweek.
+            </div>
+          ) : (
+            <div className="mt-5 space-y-2">
+
+              {pickStatus.members.map(
+                (member: any) => (
+                  <div
+                    key={member.memberId}
+                    className={`flex items-center justify-between rounded-2xl px-4 py-3 ${
+                      member.submitted
+                        ? "bg-emerald-400/10"
+                        : "bg-red-400/10"
+                    }`}
+                  >
+
+                    <div className="flex items-center gap-3">
+
+                      {member.submitted ? (
+                        <CheckCircle2
+                          size={20}
+                          className="text-emerald-400"
+                        />
+                      ) : (
+                        <AlertCircle
+                          size={20}
+                          className="text-red-400"
+                        />
+                      )}
+
+                      <span
+                        className={`font-medium ${
+                          member.submitted
+                            ? "text-emerald-300"
+                            : "text-red-300"
+                        }`}
+                      >
+                        {member.displayName}
+                      </span>
+
+                    </div>
+
+                    <span
+                      className={`text-sm font-bold ${
+                        member.submitted
+                          ? "text-emerald-400"
+                          : "text-red-400"
+                      }`}
+                    >
+                      {member.picksSubmitted}/
+                      {member.totalPicks}
+                    </span>
+
+                  </div>
+                )
+              )}
+
+            </div>
+          )}
+
         </div>
 
         {/* Featured Matches */}

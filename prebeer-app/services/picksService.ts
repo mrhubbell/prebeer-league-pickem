@@ -285,3 +285,100 @@ export async function saveFeaturedMatches(
     success: true,
   };
 }
+
+export async function getGameweekPickStatus(
+  matchweekId: number
+) {
+  // Get all active league members
+  const { data: members, error: memberError } =
+    await supabaseAdmin
+      .from("members")
+      .select(
+        "member_id, display_name"
+      )
+      .eq("active", true)
+      .order("display_name");
+
+  if (memberError) throw memberError;
+
+  // Get all fixtures for this Gameweek
+  const { data: fixtures, error: fixtureError } =
+    await supabaseAdmin
+      .from("fixtures")
+      .select("fixture_id")
+      .eq(
+        "matchweek_id",
+        matchweekId
+      );
+
+  if (fixtureError) throw fixtureError;
+
+  const fixtureIds =
+    (fixtures ?? []).map(
+      (fixture) =>
+        fixture.fixture_id
+    );
+
+  // Get all match picks for these fixtures
+  const { data: picks, error: pickError } =
+    fixtureIds.length > 0
+      ? await supabaseAdmin
+          .from("match_picks")
+          .select(
+            "member_id, fixture_id"
+          )
+          .in(
+            "fixture_id",
+            fixtureIds
+          )
+      : {
+          data: [],
+          error: null,
+        };
+
+  if (pickError) throw pickError;
+
+  // Count picks submitted by each member
+  const picksByMember =
+    new Map<number, number>();
+
+  for (const pick of picks ?? []) {
+    picksByMember.set(
+      pick.member_id,
+      (picksByMember.get(
+        pick.member_id
+      ) ?? 0) + 1
+    );
+  }
+
+  // Build submission status
+  return (members ?? []).map(
+    (member) => {
+      const picksSubmitted =
+        picksByMember.get(
+          member.member_id
+        ) ?? 0;
+
+      const totalPicks =
+        fixtureIds.length;
+
+      const submitted =
+        totalPicks > 0 &&
+        picksSubmitted >= totalPicks;
+
+      return {
+        memberId:
+          member.member_id,
+
+        displayName:
+          member.display_name,
+
+        submitted,
+
+        picksSubmitted,
+
+        totalPicks,
+      };
+    }
+  );
+}
