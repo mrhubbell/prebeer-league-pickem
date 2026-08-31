@@ -1,5 +1,6 @@
 import {
   getGoalPointsByPosition,
+  calculateWeeklyPredictionBonus,
 } from "@/services/scoringService";
 
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
@@ -711,7 +712,14 @@ export async function getLiveSeasonStandings(
   ] = await Promise.all([
     supabaseAdmin
       .from("members")
-      .select("member_id"),
+      .select(`
+        member_id,
+        first_name,
+        last_name,
+        team_name
+      `)
+      .eq("active", true)
+      .order("display_name"),
 
     supabaseAdmin
       .from("weekly_scores")
@@ -1010,6 +1018,23 @@ export async function getLiveSeasonStandings(
       cleanSheetsResult.data ?? [];
   }
 
+    /*
+   * Track correct match predictions for the
+   * current gameweek so the weekly bonus can
+   * be calculated once all fixtures are complete.
+   */
+  const correctPredictions = new Map<
+    number,
+    number
+  >();
+
+  for (const member of members) {
+    correctPredictions.set(
+      member.member_id,
+      0
+    );
+  }
+
   /*
    * ---------------------------------------------------------
    * MATCH PREDICTION POINTS
@@ -1084,6 +1109,13 @@ export async function getLiveSeasonStandings(
         continue;
       }
 
+      correctPredictions.set(
+        pick.member_id,
+        (correctPredictions.get(
+          pick.member_id
+        ) ?? 0) + 1
+      );
+
       let points = 1;
 
       if (
@@ -1106,6 +1138,33 @@ export async function getLiveSeasonStandings(
       );
     }
   }
+
+   /*
+ * ---------------------------------------------------------
+ * WEEKLY PREDICTION BONUS
+ * ---------------------------------------------------------
+ *
+ * Calculate the bonus from correct predictions
+ * completed so far in the current gameweek.
+ */
+
+for (const member of members) {
+  const bonus =
+    calculateWeeklyPredictionBonus(
+      correctPredictions.get(
+        member.member_id
+      ) ?? 0
+    );
+
+  if (bonus > 0) {
+    totals.set(
+      member.member_id,
+      (totals.get(
+        member.member_id
+      ) ?? 0
+    ) + bonus);
+  }
+}
 
   /*
    * ---------------------------------------------------------
@@ -1310,6 +1369,27 @@ export async function getLiveSeasonStandings(
     }
   }
 
+/*
+ * ---------------------------------------------------------
+ * GET SEASON PERFORMANCE DATA
+ * ---------------------------------------------------------
+ *
+ * Use the existing season standings calculation for
+ * accuracy statistics. Live points remain calculated
+ * independently above.
+ */
+
+const seasonStandings =
+  await getSeasonStandings();
+
+const seasonPerformanceByMember =
+  new Map(
+    seasonStandings.map((member) => [
+      member.member_id,
+      member,
+    ])
+  );
+
   /*
    * ---------------------------------------------------------
    * SORT LIVE STANDINGS
@@ -1317,24 +1397,48 @@ export async function getLiveSeasonStandings(
    */
 
   const liveStandings = [
-    ...members,
-  ]
-    .map((member) => ({
-      member_id:
-        member.member_id,
-      points:
-        totals.get(
-          member.member_id
-        ) ?? 0,
-    }))
+  ...members,
+]
+  .map((member) => {
+  const performance =
+    seasonPerformanceByMember.get(
+      member.member_id
+    );
+
+  return {
+    member_id: member.member_id,
+    first_name: member.first_name,
+    last_name: member.last_name,
+    team_name: member.team_name,
+    season_points:
+      totals.get(
+        member.member_id
+      ) ?? 0,
+
+    rank_change:
+      performance?.rank_change ?? 0,
+
+    match_prediction_accuracy:
+      performance?.match_prediction_accuracy ?? 0,
+
+    goalscorer_accuracy:
+      performance?.goalscorer_accuracy ?? 0,
+
+    assist_accuracy:
+      performance?.assist_accuracy ?? 0,
+
+    clean_sheet_accuracy:
+      performance?.clean_sheet_accuracy ?? 0,
+  };
+})
     .sort((a, b) => {
       if (
-        b.points !==
-        a.points
+        b.season_points !==
+        a.season_points
       ) {
         return (
-          b.points -
-          a.points
+          b.season_points -
+          a.season_points
         );
       }
 

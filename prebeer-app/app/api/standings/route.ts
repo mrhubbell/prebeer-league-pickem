@@ -1,43 +1,66 @@
 import { NextResponse } from "next/server";
+
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import { getSeasonStandings } from "@/services/standingsService";
+import { getLiveSeasonStandings } from "@/services/standingsService";
 
 export async function GET() {
   try {
-    const [standings, matchweekResult] =
-      await Promise.all([
-        getSeasonStandings(),
+    // Find the currently active gameweek.
+    const { data: matchweek, error } =
+      await supabaseAdmin
+        .from("matchweeks")
+        .select("matchweek_id, week_number, status")
+        .eq("status", "OPEN")
+        .order("week_number", {
+          ascending: false,
+        })
+        .limit(1)
+        .maybeSingle();
 
-        supabaseAdmin
-          .from("matchweeks")
-          .select("week_number")
-          .eq("status", "LOCKED")
-          .order("week_number", {
-            ascending: false,
-          })
-          .limit(1)
-          .maybeSingle(),
-      ]);
-
-    if (matchweekResult.error) {
-      throw matchweekResult.error;
+    if (error) {
+      throw error;
     }
+
+    if (!matchweek) {
+      return NextResponse.json({
+        success: true,
+        standings: [],
+        gameweek: null,
+      });
+    }
+
+    // Calculate standings using completed results
+    // from the current gameweek plus all prior
+    // completed gameweeks.
+    const standings =
+      await getLiveSeasonStandings(
+        matchweek.matchweek_id
+      );
 
     return NextResponse.json({
       success: true,
       standings,
-      resultsThroughMatchweek:
-        matchweekResult.data?.week_number ?? 0,
+      gameweek: {
+        matchweekId:
+          matchweek.matchweek_id,
+        weekNumber:
+          matchweek.week_number,
+        status:
+          matchweek.status,
+      },
     });
-
   } catch (error: any) {
-
-    console.error(error);
+    console.error(
+      "STANDINGS API ERROR:",
+      error
+    );
 
     return NextResponse.json(
       {
         success: false,
-        message: error.message,
+        message:
+          error?.message ??
+          "Unable to load standings.",
       },
       {
         status: 500,

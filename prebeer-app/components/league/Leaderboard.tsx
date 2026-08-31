@@ -61,7 +61,7 @@ interface GameweekPickData {
 
 export default function Leaderboard() {
   const [standings, setStandings] = useState<Standing[]>([]);
-  const [resultsThroughMatchweek, setResultsThroughMatchweek] =
+  const [currentMatchweek, setCurrentMatchweek] =
     useState<number>(0);
 
   const [loading, setLoading] = useState(true);
@@ -90,8 +90,9 @@ export default function Leaderboard() {
 
         if (response.ok && result.success) {
           setStandings(result.standings);
-          setResultsThroughMatchweek(
-            result.resultsThroughMatchweek
+
+          setCurrentMatchweek(
+            result.gameweek?.weekNumber ?? 0
           );
         }
       } finally {
@@ -143,12 +144,12 @@ export default function Leaderboard() {
   }, []);
 
   useEffect(() => {
-    if (resultsThroughMatchweek > 0) {
+    if (currentMatchweek > 0) {
       setSelectedGameweek(
-        resultsThroughMatchweek
+        currentMatchweek
       );
     }
-  }, [resultsThroughMatchweek]);
+  }, [currentMatchweek]);
 
   async function loadMemberPicks(
     memberId: number,
@@ -340,13 +341,7 @@ function getPickResultIcon(
           <h2 className="mt-1 text-2xl font-black leading-tight text-white sm:text-3xl">
             Standings
           </h2>
-
-          {resultsThroughMatchweek > 0 && (
-            <p className="mt-2 text-sm font-semibold text-slate-400">
-              Results through Matchweek{" "}
-              {resultsThroughMatchweek}
-            </p>
-          )}
+          
         </div>
       </div>
 
@@ -488,7 +483,7 @@ function getPickResultIcon(
                       </div>
                     </div>
 
-                    {resultsThroughMatchweek >
+                    {currentMatchweek >
                       0 && (
                       <div className="mt-6 border-t border-slate-800 pt-4">
                         <div className="flex items-center justify-between gap-3">
@@ -499,7 +494,7 @@ function getPickResultIcon(
                           <select
                             value={
                               selectedGameweek ??
-                              resultsThroughMatchweek
+                              currentMatchweek
                             }
                             onChange={(event) =>
                               handleGameweekChange(
@@ -514,7 +509,7 @@ function getPickResultIcon(
                             {Array.from(
                               {
                                 length:
-                                  resultsThroughMatchweek,
+                                  currentMatchweek,
                               },
                               (_, index) => (
                                 <option
@@ -560,22 +555,28 @@ function getPickResultIcon(
               ];
 
             const actualResult =
-              memberPicks.results.matchResults[
-                fixture.fixture_id
-              ];
+  memberPicks.results.matchResults[
+    fixture.fixture_id
+  ];
 
-            const correct =
-              isCorrectPrediction(
-                prediction,
-                actualResult
-              );
+const isFinished =
+  fixture.finished === true;
+
+const correct =
+  isFinished &&
+  isCorrectPrediction(
+    prediction,
+    actualResult
+  );
 
             return (
               <div
                 key={fixture.fixture_id}
-                className={`flex items-center justify-between gap-3 rounded-lg px-3 py-2 ${getPickResultClass(
-                  correct
-                )}`}
+                className={`flex items-center justify-between gap-3 rounded-lg px-3 py-2 ${
+  !isFinished
+    ? "border border-slate-800 bg-slate-950/40 text-slate-400"
+    : getPickResultClass(correct)
+}`}
               >
                 <div className="min-w-0">
                   <p className="truncate text-xs font-semibold">
@@ -598,15 +599,16 @@ function getPickResultIcon(
 
                 <span className="flex-shrink-0 text-xs font-bold">
                   {prediction
-                    ? getPredictionLabel(
-                        prediction
-                      )
-                    : "—"}{" "}
-                  {prediction &&
-                    actualResult &&
-                    getPickResultIcon(
-                      correct
-                    )}
+  ? getPredictionLabel(
+      prediction
+    )
+  : "—"}{" "}
+{isFinished &&
+  prediction &&
+  actualResult &&
+  getPickResultIcon(
+    correct
+  )}
                 </span>
               </div>
             );
@@ -715,27 +717,44 @@ function getPickResultIcon(
             memberPicks.cleanSheet
               .club_id;
 
-          const correct =
-            memberPicks.results
-              .cleanSheetResults
-              .includes(clubId);
+          const clubFixture =
+  memberPicks.gameweek.fixtures.find(
+    (fixture) =>
+      fixture.home_club_id === clubId ||
+      fixture.away_club_id === clubId
+  );
+
+const isFinished =
+  clubFixture?.finished === true;
+
+const correct =
+  isFinished &&
+  memberPicks.results
+    .cleanSheetResults
+    .includes(clubId);
 
           return (
             <span
-              className={`inline-block rounded-lg px-3 py-2 text-xs font-semibold ${getPickResultClass(
-                correct
-              )}`}
+              className={`inline-block rounded-lg px-3 py-2 text-xs font-semibold ${
+  !isFinished
+    ? "border border-slate-800 bg-slate-950/40 text-slate-400"
+    : getPickResultClass(correct)
+}`}
             >
               {getClubName(clubId)}{" "}
-              {correct ? (
-                <>
-                  — Clean Sheet ✓
-                </>
-              ) : (
-                <>
-                  — No Clean Sheet ✗
-                </>
-              )}
+              {!isFinished ? (
+  <>
+    — Pending
+  </>
+) : correct ? (
+  <>
+    — Clean Sheet ✓
+  </>
+) : (
+  <>
+    — No Clean Sheet ✗
+  </>
+)}
             </span>
           );
         })()
