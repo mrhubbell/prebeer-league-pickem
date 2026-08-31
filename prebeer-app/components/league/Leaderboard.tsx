@@ -625,39 +625,68 @@ const correct =
 
       <div className="flex flex-wrap gap-2">
         {memberPicks.goalScorers.map(
-          (pick) => {
-            const goals =
-              memberPicks.results
-                .goalResults[
-                pick.player_id
-              ] ?? 0;
+  (pick) => {
+    const goals =
+      memberPicks.results
+        .goalResults[
+        pick.player_id
+      ] ?? 0;
 
-            const correct =
-              goals > 0;
+    const player =
+      players.find(
+        (p) =>
+          p.player_id ===
+          pick.player_id
+      );
 
-            return (
-              <span
-                key={pick.pick_number}
-                className={`rounded-lg px-3 py-2 text-xs font-semibold ${getPickResultClass(
-                  correct
-                )}`}
-              >
-                {getPlayerName(
-                  pick.player_id
-                )}{" "}
-                <span className="font-normal">
-                  — {goals}{" "}
-                  {goals === 1
-                    ? "goal"
-                    : "goals"}
-                </span>{" "}
-                {getPickResultIcon(
-                  correct
-                )}
-              </span>
-            );
-          }
-        )}
+    const playerFixture =
+      memberPicks.gameweek.fixtures.find(
+        (fixture) =>
+          fixture.home_club_id ===
+            player?.club_id ||
+          fixture.away_club_id ===
+            player?.club_id
+      );
+
+    const isFinished =
+      playerFixture?.finished === true;
+
+    const correct =
+      isFinished &&
+      goals > 0;
+
+    return (
+      <span
+        key={pick.pick_number}
+        className={`rounded-lg px-3 py-2 text-xs font-semibold ${
+          !isFinished
+            ? "border border-slate-800 bg-slate-950/40 text-slate-400"
+            : getPickResultClass(
+                correct
+              )
+        }`}
+      >
+        {getPlayerName(
+          pick.player_id
+        )}{" "}
+        <span className="font-normal">
+          —{" "}
+          {isFinished
+            ? `${goals} ${
+                goals === 1
+                  ? "goal"
+                  : "goals"
+              }`
+            : "Pending"}
+        </span>{" "}
+        {isFinished &&
+          getPickResultIcon(
+            correct
+          )}
+      </span>
+    );
+  }
+)}
       </div>
     </div>
 
@@ -669,39 +698,68 @@ const correct =
 
       <div className="flex flex-wrap gap-2">
         {memberPicks.assists.map(
-          (pick) => {
-            const assists =
-              memberPicks.results
-                .assistResults[
-                pick.player_id
-              ] ?? 0;
+  (pick) => {
+    const assists =
+      memberPicks.results
+        .assistResults[
+        pick.player_id
+      ] ?? 0;
 
-            const correct =
-              assists > 0;
+    const player =
+      players.find(
+        (p) =>
+          p.player_id ===
+          pick.player_id
+      );
 
-            return (
-              <span
-                key={pick.pick_number}
-                className={`rounded-lg px-3 py-2 text-xs font-semibold ${getPickResultClass(
-                  correct
-                )}`}
-              >
-                {getPlayerName(
-                  pick.player_id
-                )}{" "}
-                <span className="font-normal">
-                  — {assists}{" "}
-                  {assists === 1
-                    ? "assist"
-                    : "assists"}
-                </span>{" "}
-                {getPickResultIcon(
-                  correct
-                )}
-              </span>
-            );
-          }
-        )}
+    const playerFixture =
+      memberPicks.gameweek.fixtures.find(
+        (fixture) =>
+          fixture.home_club_id ===
+            player?.club_id ||
+          fixture.away_club_id ===
+            player?.club_id
+      );
+
+    const isFinished =
+      playerFixture?.finished === true;
+
+    const correct =
+      isFinished &&
+      assists > 0;
+
+    return (
+      <span
+        key={pick.pick_number}
+        className={`rounded-lg px-3 py-2 text-xs font-semibold ${
+          !isFinished
+            ? "border border-slate-800 bg-slate-950/40 text-slate-400"
+            : getPickResultClass(
+                correct
+              )
+        }`}
+      >
+        {getPlayerName(
+          pick.player_id
+        )}{" "}
+        <span className="font-normal">
+          —{" "}
+          {isFinished
+            ? `${assists} ${
+                assists === 1
+                  ? "assist"
+                  : "assists"
+              }`
+            : "Pending"}
+        </span>{" "}
+        {isFinished &&
+          getPickResultIcon(
+            correct
+          )}
+      </span>
+    );
+  }
+)}
       </div>
     </div>
 
