@@ -6,17 +6,10 @@ export async function syncGameweeks() {
 
   const gameweeks = data.events.map((event: any) => ({
     matchweek_id: event.id,
-    season_id: 1, // We'll make this dynamic later
+    season_id: 1,
     week_number: event.id,
     deadline: event.deadline_time,
-
-    status: event.finished
-  ? "LOCKED"
-  : event.is_current
-  ? "OPEN"
-  : "UPCOMING",
-
-    fixture_count: 0, // Updated later when fixtures are synced
+    fixture_count: 0,
   }));
 
   const { data: result, error } = await supabaseAdmin
